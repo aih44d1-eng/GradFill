@@ -19,6 +19,7 @@
 const http = require("http");
 const https = require("https");
 const crypto = require("crypto");
+const { createPool, initSchema, rowToAccount } = require("./db.js");
 
 /* Mirrors cloud.js's PLAN_DEFS (the extension's copy is UI-only — this
    copy is what actually protects API spend). In a real deployment these
@@ -48,34 +49,71 @@ function planFor(account) {
   return PLAN_DEFS[account.planId] || PLAN_DEFS.free;
 }
 
-/* In-memory account store, keyed by bearer token. Real deployment: a real
-   database, with planId written by the Stripe webhook handler, never by
-   any request this file serves — /v1/auth/register below always creates
-   free-plan accounts, and there is no route that lets a caller set their
-   own plan, which is the whole point. seedAccount() is a TEST-ONLY helper
-   for planting an account (e.g. already on Pro) without going through
-   registration. */
-function createAccountStore() {
-  return { accounts: new Map() };
+/* Real Postgres-backed account store, replacing the old in-memory Map --
+   every account, plan, and usage record now survives a process restart.
+   store.pool is a pg.Pool. ensureSchema() must be awaited once before the
+   store is used (both createServer's main-module startup block below and
+   every test file call it explicitly right after createAccountStore()). */
+function createAccountStore(connectionString) {
+  return { pool: createPool(connectionString) };
 }
-function seedAccount(store, token, planId, email) {
-  store.accounts.set(token, { token, email: email || (planId + "@test.local"), planId: planId || "free", usage: { month: monthKey(), drafts: 0, resumes: 0, coverLetters: 0 } });
+async function ensureSchema(store) {
+  await initSchema(store.pool);
+}
+async function closeAccountStore(store) {
+  await store.pool.end();
 }
 
-function authenticate(store, req) {
+/* TEST-ONLY helper for planting an account (e.g. already on Pro) without
+   going through registration -- same purpose as the old in-memory
+   version, now backed by a real row. Safe to call twice for the same
+   token (some test files reuse fixture tokens across runs) -- it just
+   re-asserts the given plan on conflict rather than erroring. */
+async function seedAccount(store, token, planId, email) {
+  const mk = monthKey();
+  await store.pool.query(
+    `INSERT INTO accounts (token, email, password_salt, password_hash, plan_id, usage_month, usage_drafts, usage_resumes, usage_cover_letters)
+     VALUES ($1, $2, '', '', $3, $4, 0, 0, 0)
+     ON CONFLICT (token) DO UPDATE SET plan_id = EXCLUDED.plan_id`,
+    [token, email || ((planId || "free") + "@test.local"), planId || "free", mk]
+  );
+}
+
+/* TEST-ONLY helper: direct field writes for test setup that the old
+   in-memory tests did via store.accounts.get(token).field = value (e.g.
+   "manually promote it to Pro", "backdate planExpiresAt to prove expiry
+   is a read-time check, not a background sweep"). Never called from any
+   HTTP route -- those all decide plan changes themselves, via the
+   register handler or the webhook handlers below. */
+async function setAccountFieldsForTest(store, token, fields) {
+  const cols = { planId: "plan_id", stripeCustomerId: "stripe_customer_id", planExpiresAt: "plan_expires_at" };
+  const sets = [], values = [];
+  Object.keys(fields || {}).forEach((k) => {
+    if (!cols[k]) throw new Error("setAccountFieldsForTest: unknown field '" + k + "'");
+    values.push(k === "planExpiresAt" && fields[k] != null ? new Date(fields[k]) : fields[k]);
+    sets.push(cols[k] + " = $" + values.length);
+  });
+  values.push(token);
+  await store.pool.query(`UPDATE accounts SET ${sets.join(", ")} WHERE token = $${values.length}`, values);
+}
+
+async function getAccount(store, token) {
+  if (!token) return null;
+  const res = await store.pool.query("SELECT * FROM accounts WHERE token = $1", [token]);
+  return rowToAccount(res.rows[0]);
+}
+
+async function authenticate(store, req) {
   const h = req.headers["authorization"] || "";
   const m = /^Bearer\s+(.+)$/i.exec(h.trim());
   if (!m) return null;
-  const account = store.accounts.get(m[1]);
-  return account || null;
+  return getAccount(store, m[1]);
 }
 
-function accountByEmail(store, email) {
+async function accountByEmail(store, email) {
   const needle = String(email || "").trim().toLowerCase();
-  for (const account of store.accounts.values()) {
-    if (account.email && account.email.toLowerCase() === needle) return account;
-  }
-  return null;
+  const res = await store.pool.query("SELECT * FROM accounts WHERE lower(email) = $1", [needle]);
+  return rowToAccount(res.rows[0]);
 }
 
 /* scrypt, not plaintext, not a fixed salt — this is still a reference
@@ -113,6 +151,17 @@ function chargeAI(account, kind) {
   if (account.usage[key] >= limit) return { ok: false, status: 402, code: "quota", message: "Monthly limit reached — resets next month, or upgrade for a higher cap." };
   account.usage[key] += 1;
   return { ok: true };
+}
+
+/* chargeAI() above only mutates the in-memory account object it was
+   handed -- it has no idea a database exists. This is the missing half:
+   write that mutated usage back to the account's real row. Called right
+   after a successful chargeAI() in the AI route handler below. */
+async function persistUsage(store, account) {
+  await store.pool.query(
+    "UPDATE accounts SET usage_month = $1, usage_drafts = $2, usage_resumes = $3, usage_cover_letters = $4 WHERE token = $5",
+    [account.usage.month, account.usage.drafts, account.usage.resumes, account.usage.coverLetters, account.token]
+  );
 }
 
 /* Stub AI provider — no real key is configured in this reference server.
