@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GradFill — your details</title>
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div>
+    <p class="eyebrow">GradFill</p>
+    <h1>Your details</h1>
+    <p class="sub">Answer these once. Everything saves as you type, stays on this computer, and can be changed any time.</p>
+  </div>
+  <p class="saved" id="saved" hidden>Saved</p>
+</header>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Sections">
+      <a href="#account"><span class="n">00</span> Account &amp; plan</a>
+    <a href="#essentials"><span class="n">00A</span> Application essentials</a>
+    <a href="#about"><span class="n">01</span> About you</a>
+    <a href="#eligibility"><span class="n">02</span> Eligibility</a>
+    <a href="#preferences"><span class="n">03</span> Preferences</a>
+    <a href="#study"><span class="n">04</span> Study</a>
+    <a href="#work"><span class="n">05</span> Experience</a>
+    <a href="#skills"><span class="n">06</span> Skills &amp; languages</a>
+<a href="#applications"><span class="n">07</span> Applications</a>
+<a href="#tags"><span class="n">08</span> Background</a>
+<a href="#examples"><span class="n">09</span> Your examples</a>
+<a href="#resume"><span class="n">10</span> Resume</a>
+<a href="#custom"><span class="n">11</span> Custom answers</a>
+<a href="#backup"><span class="n">12</span> Backup</a>
+  </nav>
+
+  <main>
+
+    <section id="account">
+      <h2><span class="n">00</span> Account &amp; plan</h2>
+      <p class="note">GradFill can stay entirely local, connect to a local development server, or use your production GradFill account. AI requests never contain an API key from this extension — production AI runs through your backend.</p>
+      <div class="account-grid">
+        <div class="account-card">
+          <p class="account-kicker">Connection</p>
+          <label>Mode
+            <select id="gfMode">
+              <option value="demo">Offline demo</option>
+              <option value="local">Local backend (127.0.0.1:8787)</option>
+              <option value="production">Production (api.gradfill.app)</option>
+            </select>
+          </label>
+          <div id="demoPlanWrap" style="margin-top:12px">
+            <label>Developer test plan
+              <select id="gfDemoPlan"><option value="free">Free</option><option value="pro">Pro — A$20/month</option><option value="season">Grad Season Pass — A$45 / 90 days</option></select>
+            </label>
+            <p class="mini-note">Testing only. Production entitlements come from the server and cannot be trusted from browser storage.</p>
+          </div>
+          <label class="checkline" style="margin-top:12px"><input type="checkbox" id="gfCloudSync"> Sync my profile and tracker to my account</label>
+          <p class="mini-note">Off by default. Resume/transcript file contents are not uploaded by this sync.</p>
+        </div>
+        <div class="account-card">
+          <div class="account-head"><div><p class="account-kicker">Plan</p><strong id="gfPlanName">Free</strong></div><span class="plan-pill" id="gfPlanPrice">A$0</span></div>
+          <p id="gfUsage" class="mini-note">Loading usage…</p>
+          <div id="gfAuthSignedOut">
+            <label>Email<input type="email" id="gfEmail" autocomplete="email"></label>
+            <label style="margin-top:10px">Password<input type="password" id="gfPassword" autocomplete="current-password"></label>
+            <div class="account-actions"><button class="primary mini-primary" id="gfLogin" type="button">Sign in</button><button class="ghost" id="gfRegister" type="button">Create account</button></div>
+          </div>
+          <div id="gfAuthSignedIn" hidden>
+            <p class="account-email" id="gfAccountEmail"></p>
+            <div class="account-actions"><button class="primary mini-primary" id="gfUpgrade" type="button">Upgrade — A$20/month</button><button class="ghost" id="gfUpgradeSeason" type="button">Or Season Pass — A$45/90 days</button><button class="ghost" id="gfUpgradeSeasonCrypto" type="button">Or Season Pass with crypto</button><button class="ghost" id="gfBilling" type="button">Billing</button><button class="ghost" id="gfLogout" type="button">Sign out</button></div>
+            <p class="mini-note" id="gfCryptoNote">Crypto checkout (via Coinbase Commerce) covers the one-off Season Pass only — Pro's monthly subscription needs a payment method that can be charged again automatically, which a blockchain payment isn't. Crypto purchases are settled on-chain: activation happens once your payment is fully confirmed (this can take longer than a card payment), and refunds are handled manually rather than reversed automatically — contact support.</p>
+          </div>
+          <p class="filename" id="gfAccountMsg"></p>
+        </div>
+      </div>
+      <p class="privacy-note">AI drafting sends the application question, role/job-description context, and relevant career-profile facts to your GradFill backend, which then calls the configured AI provider. Sensitive demographic fields are excluded from the AI payload by default. <a href="privacy.html" target="_blank">Read the local privacy summary</a>.</p>
+    </section>
+
+    <section id="essentials">
+      <h2><span class="n">00A</span> Application essentials</h2>
+      <p class="note">These are the details that repeatedly appear on Workday, PageUp and SuccessFactors forms. Confirm them here once so GradFill can complete picklists and repeating sections without stopping to ask you.</p>
+      <div class="grid">
+        <label>Country / region of residence<select data-bind="personal.country"></select></label>
+      </div>
+      <div class="account-grid" style="margin-top:18px">
+        <div class="account-card">
+          <p class="account-kicker">Work experience — business type</p>
+          <p class="mini-note">“Type of business” means the employer's industry or sector — for example Information Technology, Banking, Engineering, Energy or Retail. It is stored separately for each role; GradFill will only treat it as confirmed when you enter it yourself.</p>
+          <div id="essentialBusinessTypes"></div>
+        </div>
+        <div class="account-card">
+          <p class="account-kicker">Education classification</p>
+          <p class="mini-note">Each qualification keeps its own broad education type, institution type and country. This lets GradFill answer fields such as Academic / University / Australia without guessing from another record.</p>
+          <div id="essentialEducation"></div>
+        </div>
+        <div class="account-card">
+          <p class="account-kicker">Language proficiency</p>
+          <p class="mini-note">Confirm the language plus speaking, writing and reading levels used by application picklists. Non-English languages are prioritised when a form opens a Language Skills row.</p>
+          <div id="essentialLanguages"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 01 -->
+    <section id="about">
+      <h2><span class="n">01</span> About you</h2>
+
+      <h3 class="subhead">Personal</h3>
+      <div class="grid">
+        <label>Salutation<input data-bind="personal.salutation" placeholder="Mr / Ms / Mx / Dr"></label>
+        <label>First name <span class="req">*</span><input data-bind="personal.firstName" data-required="true"></label>
+        <label>Middle name<input data-bind="personal.middleName"></label>
+        <label>Last name <span class="req">*</span><input data-bind="personal.lastName" data-required="true"></label>
+        <label>Preferred name<input data-bind="personal.preferredName" placeholder="Leave blank if none"></label>
+        <label>Date of birth<input type="date" data-bind="personal.dob"></label>
+      </div>
+
+      <h3 class="subhead">Contact</h3>
+      <div class="grid">
+        <label>Email <span class="req">*</span><input type="email" data-bind="personal.email" data-required="true" data-validate="email"></label>
+        <label>Phone<input data-bind="personal.phone" placeholder="04XX XXX XXX"></label>
+        <label>Phone type<input data-bind="personal.phoneType" placeholder="Mobile"></label>
+      </div>
+
+      <h3 class="subhead">Address</h3>
+      <p class="mini-note" style="margin:-8px 0 14px">Start typing your street address and pick a suggestion to fill in the rest automatically.</p>
+      <div class="grid">
+        <label class="wide">Street address<input data-bind="personal.addressLine1" placeholder="Start typing…"></label>
+        <label>Suburb<input data-bind="personal.suburb"></label>
+        <label>State / territory
+          <select id="personalState"></select>
+        </label>
+        <label id="personalStateOtherWrap" class="wide" hidden>State / province (typed)
+          <input id="personalStateOther" placeholder="Type it in">
+        </label>
+        <label>Postcode<input data-bind="personal.postcode"></label>
+        <label>Country<select data-bind="personal.country"></select></label>
+      </div>
+
+      <h3 class="subhead">Online presence</h3>
+      <div class="grid">
+        <label>LinkedIn<input data-bind="personal.linkedin" placeholder="https://"></label>
+        <label>GitHub<input data-bind="personal.github" placeholder="https://"></label>
+        <label class="wide">Portfolio or website<input data-bind="personal.portfolio" placeholder="https://"></label>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="eligibility">
+      <h2><span class="n">02</span> Eligibility</h2>
+      <p class="note">Forms word these differently everywhere. Write the answer the way you'd want it to appear.</p>
+      <div class="grid">
+        <label>Citizenship<input data-bind="eligibility.citizenship" placeholder="Australian citizen"></label>
+        <label>Work rights<input data-bind="eligibility.workRights" placeholder="Full working rights"></label>
+        <label>Security clearance<input data-bind="eligibility.securityClearance" placeholder="None — willing to obtain"></label>
+        <label>Driver's licence<input data-bind="eligibility.driversLicence" placeholder="Full NSW licence"></label>
+        <label>Aboriginal or Torres Strait Islander<input data-bind="eligibility.indigenousStatus" placeholder="Optional"></label>
+        <label>Gender<input data-bind="eligibility.gender" placeholder="Optional"></label>
+        <label class="wide">Adjustments or accessibility needs<input data-bind="eligibility.disability" placeholder="Optional — e.g. None, or what you need"></label>
+      </div>
+
+      <p class="note" style="margin-top:22px">Diversity and inclusion questions. Most forms mark these optional and voluntary — leave any blank you'd rather answer per-application.</p>
+      <div class="grid">
+        <label>Pronouns<input data-bind="eligibility.pronouns" placeholder="Optional — e.g. He/Him"></label>
+        <label>LGBTQIA+<input data-bind="eligibility.lgbtqia" placeholder="Optional — Yes / No / Prefer not to answer"></label>
+        <label>Culturally or linguistically diverse background<input data-bind="eligibility.culturallyDiverse" placeholder="Optional — Yes / No / Prefer not to answer"></label>
+        <label>First in family to graduate university<input data-bind="eligibility.firstInFamily" placeholder="Optional — Yes / No / Prefer not to answer"></label>
+        <label>Identify as part of a minority group<input data-bind="eligibility.minorityGroup" placeholder="Optional — Yes / No / Prefer not to answer"></label>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="preferences">
+      <h2><span class="n">03</span> Preferences</h2>
+      <p class="note">These vary a lot by role — leave anything blank you'd rather answer per-application. GradFill still fills confidently-matched fields elsewhere; a blank preference just means those particular questions get flagged for you instead of guessed at.</p>
+      <div class="grid">
+        <label>Earliest start date<input data-bind="preferences.availability" placeholder="e.g. January 2027"></label>
+        <label>Salary expectation<input data-bind="preferences.salaryExpectation" placeholder="Optional"></label>
+        <label>Notice period<input data-bind="preferences.noticePeriod" placeholder="Optional"></label>
+        <label>Willing to relocate?
+          <select data-bind="preferences.relocate">
+            <option value="">Ask me each time</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="Subject to role">Subject to role</option>
+          </select>
+        </label>
+        <label class="wide">Preferred team / stream / specialisation<input data-bind="preferences.teamStream" placeholder="e.g. Cybersecurity, Data & Digital — team names vary by employer, this is just a starting point"></label>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section id="study">
+      <h2><span class="n">04</span> Study</h2>
+      <p class="note">Leave <em>Finished</em> unticked for a degree you're still doing. GradFill will never tell an employer you've graduated when you haven't.</p>
+      <div class="list" id="educationList"></div>
+      <button class="add" data-add="education">Add a qualification</button>
+    </section>
+
+    <!-- 05 -->
+    <section id="work">
+      <h2><span class="n">05</span> Experience</h2>
+      <p class="note">Internships, part-time work, volunteering, tutoring — anything an application might ask about.</p>
+      <div class="list" id="experienceList"></div>
+      <button class="add" data-add="experience">Add a role</button>
+    </section>
+
+    <!-- 06 -->
+    <section id="skills">
+      <h2><span class="n">06</span> Skills &amp; languages</h2>
+      <label class="wide block">Skills, separated by commas
+        <textarea data-bind="skills" rows="3" placeholder="Python, network security, digital forensics, SQL"></textarea>
+      </label>
+      <p class="note" style="margin-top:22px">Languages, with your level for each. Leave written blank if you speak it but don't write it.</p>
+      <div class="list" id="languagesList"></div>
+      <button class="add" data-add="languages">Add a language</button>
+
+      <p class="note" style="margin-top:22px">Referees are never filled in for you — GradFill always flags those fields so you enter them by hand. Saved here for your own reference.</p>
+      <div class="list" id="refereesList"></div>
+      <button class="add" data-add="referees">Add a referee</button>
+    </section>
+
+    <!-- 07 -->
+    <section id="applications">
+      <h2><span class="n">07</span> Applications</h2>
+      <p class="note">Your job-search tracker: save roles before applying, then move them through Applied, Assessment, Interview, Offer or other stages. GradFill can capture the role, company, location, link, closing date, job-description snapshot and skills from your profile that appear in the ad. Add notes and the resume version you used so every application stays connected in one place.</p>
+      <div class="list" id="applicationsList"></div>
+      <button class="add" data-add="applications">Add an application</button>
+    </section>
+
+    <!-- 08 -->
+    <section id="tags">
+      <h2><span class="n">08</span> Background</h2>
+      <p class="note">Grad programs love "select all that apply" checklists — programs you've done, leadership experience, extracurriculars, industries you've worked in. Tick what applies once here, and GradFill matches these directly against whatever a form asks, with no guessing involved. Worth being thorough: this is what makes those questions fill correctly instead of getting flagged for you every time.</p>
+
+      <div id="tagsRoot"></div>
+    </section>
+
+    <!-- 09 -->
+    <section id="examples">
+      <h2><span class="n">09</span> Your examples</h2>
+      <p class="note">Real stories from your life, in Situation / Task / Action / Result form. These are available to GradFill's AI drafting flow when a form asks a written question, so suggestions stay grounded in things you actually did.</p>
+      <div class="list" id="starBankList"></div>
+      <button class="add" data-add="starBank">Add an example</button>
+    </section>
+
+    <!-- 10 -->
+    <section id="resume">
+      <h2><span class="n">10</span> Resume &amp; academic record</h2>
+      <p class="note">Browsers block extensions from attaching files for you, so this keeps your documents one click away instead. GradFill tells you which one a form is asking for, and flags every upload box it finds so you don't miss one.</p>
+      <label class="wide block">Resume / CV
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx">
+      </label>
+      <p class="filename" id="resumeName">No file saved yet.</p>
+      <label class="wide block" style="margin-top:16px">Academic record / transcript
+        <input type="file" id="academicRecordFile" accept=".pdf,.doc,.docx">
+      </label>
+      <p class="filename" id="academicRecordName">No file saved yet.</p>
+    </section>
+
+    <!-- 11 -->
+    <section id="custom">
+      <h2><span class="n">11</span> Custom answers</h2>
+      <p class="note">Hit a question GradFill doesn't know? Put a word from it on the left and your answer on the right. Custom answers beat every built-in rule.</p>
+      <div class="list" id="customList"></div>
+      <button class="add" data-add="custom">Add a custom answer</button>
+    </section>
+
+    <section id="backup">
+      <h2><span class="n">12</span> Backup</h2>
+      <p class="note">Your details live in this browser and survive updates. A backup file is still worth keeping — it moves your details to another computer, and restores them if Chrome's storage is ever cleared.</p>
+      <div class="close">
+        <button class="ghost" id="export">Export to file</button>
+        <button class="ghost" id="import">Restore from file</button>
+        <input type="file" id="importFile" accept=".json" hidden>
+      </div>
+      <p class="filename" id="backupMsg"></p>
+    </section>
+
+    <div class="close">
+      <button class="primary" id="done">Done</button>
+      <button class="ghost" id="wipe">Erase everything</button>
+    </div>
+    <p class="filename" id="version" style="margin-top:18px"></p>
+  </main>
+</div>
+
+<script src="rules.js"></script>
+<script src="cloud.js"></script>
+<script src="setup.js"></script>
+<script src="account.js"></script>
+</body>
+</html>

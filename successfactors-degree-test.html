@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{font-family:Arial;margin:20px}.hdr{padding:18px;background:#9aacC5}label{display:inline-block;width:30%;margin:8px}input{width:30%;padding:6px}
+</style></head><body>
+<!--
+  Proves the "Degree" picker fix against the EXACT real DOM shape found
+  live on EY's SuccessFactors Candidate Profile Education section: a
+  role="combobox" custom widget, aria-label="Degree" duplicating a
+  wrapping "* Degree" <label>, id="213:_input" (SF Career Site Builder
+  generated, no semantic name attribute). Before the fix this field's
+  outer BLOCK_RULES match never fired (dead whole-string anchor against
+  f.own), fell through to the general non-block "degree" rule, and would
+  have had the full degree title (e.g. "Bachelor of Cybersecurity") typed
+  as plain text into a picker that expects a qualification LEVEL
+  selection (e.g. "Bachelor Degree") from a fixed option list.
+-->
+<div class="hdr">Education</div>
+<label for="208:_txtFld">* School</label><input id="208:_txtFld" name="VFLD1">
+<label for="213:_input">* Degree</label>
+<input id="213:_input" aria-label="Degree" autocomplete="off" type="text" placeholder="No Selection" title="Degree" role="combobox">
+<script>
+window.chrome={runtime:{onMessage:{addListener:function(fn){window.gfListener=fn}},sendMessage:function(){return Promise.resolve({ok:true})}}};
+</script>
+<script src="rules.js"></script><script src="content.js"></script>
+<script>
+const profile={personal:{firstName:'Test',lastName:'User',email:'t@example.com',country:'Australia'},eligibility:{},education:[{institution:'UTS',degree:'Bachelor of Cybersecurity',major:'Cybersecurity',levelLabel:'Bachelor Degree',startDate:'2023-02',expectedGraduation:'2026-11',completed:false}],experience:[],languages:[],skills:[],preferences:{},tags:{industries:{items:[]},programs:{items:[]},leadership:{items:[]},extracurricular:{items:[]}},custom:[],fieldMemory:[],answerLibrary:[]};
+setTimeout(()=>{
+  gfListener({type:'GF_FILL',profile,roleContext:{}},{},function(res){
+    document.body.setAttribute('data-done','yes');
+    document.body.setAttribute('data-report',JSON.stringify(res.report||[]));
+    document.body.setAttribute('data-degree-value', document.getElementById('213:_input').value);
+    document.body.setAttribute('data-school-value', document.getElementById('208:_txtFld').value);
+  });
+},50);
+</script>
+</body></html>

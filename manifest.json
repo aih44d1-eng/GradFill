@@ -1,0 +1,74 @@
+{
+  "manifest_version": 3,
+  "name": "GradFill AI",
+  "short_name": "GradFill",
+  "version": "2.14.0",
+  "description": "Human-in-the-loop graduate and job application autofill, AI drafting, tailored resumes, and application tracking from one profile.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwi7/fmJgCgn2Y41biRb5gaDlELm3osdR9eqJLQztheRnIsaiyQJTmkge5jm8X+pdWoweljCjYQUcw3x/WF93uaObOCvO5mL8OAuzha/Kuot8rnurEb4WSzZa5PWeod8MCv19RAcOgzCzEKBrZ06uFOOy3bq9RQW0+69cpKFtXbQ946C7MIObzOWQv75oIFMLZ1bNvJ6OqjGduhlFB5aXWt5ztDFoX/4P23HLTzhrTOebtQxEEII6oL7rg5QAwYD7in5o/Qp7IA0J8sAxTVa9v5mQM9FBkNDSsC0ZQIy5mkHAXu+64JCxXnHh5s58vZabQH63wmEQckrId/JngYW/VQIDAQAB",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "unlimitedStorage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*.myworkdayjobs.com/*",
+    "https://*.myworkdaysite.com/*",
+    "https://*.workdayjobs.com/*",
+    "https://*.pageuppeople.com/*",
+    "https://*.successfactors.eu/*",
+    "https://*.successfactors.com/*",
+    "https://*.sapsf.com/*",
+    "https://*.avature.net/*",
+    "https://*.oraclecloud.com/*",
+    "http://127.0.0.1:8787/*",
+    "http://localhost:8787/*",
+    "https://api.gradfill.app/*"
+  ],
+  "action": {
+    "default_title": "GradFill AI",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "setup.html",
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.myworkdayjobs.com/*",
+        "https://*.myworkdaysite.com/*",
+        "https://*.workdayjobs.com/*",
+        "https://*.pageuppeople.com/*",
+        "https://*.successfactors.eu/*",
+        "https://*.successfactors.com/*",
+        "https://*.sapsf.com/*",
+        "https://*.avature.net/*",
+        "https://*.oraclecloud.com/*"
+      ],
+      "js": [
+        "rules.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{font-family:Arial;margin:20px}.hdr{padding:18px;background:#9aacC5}label{display:block;margin:8px 0}input{width:30%;padding:6px}
+</style></head><body>
+<!--
+  Full-audit fixture: proves every other whole-string ^...$ anchor found
+  tested against f.own (the same dead-anchor bug confirmed live twice
+  this session, on SuccessFactors "Title" and "School") is now reachable,
+  using generated-looking ids/names (SF Career Site Builder style) so
+  each field carries the same kind of id/name pollution that broke the
+  anchors in the first place. These specific bare labels ("From"/"To"/
+  "Proficiency"/"Street") weren't spotted live this session -- they're
+  fixed proactively because the mechanism that broke Title/School/Degree
+  is structural, not platform-specific, and the same anchor pattern
+  appeared in five more places once found.
+-->
+<div class="hdr">Work Experience</div>
+<label for="301:_txtFld">Company</label><input id="301:_txtFld" name="VFLD1">
+<label for="302:_dateFld">From</label><input id="302:_dateFld" name="VFLD2">
+<label for="303:_dateFld">To</label><input id="303:_dateFld" name="VFLD3">
+
+<div class="hdr">Education</div>
+<label for="401:_txtFld">School</label><input id="401:_txtFld" name="VFLD4">
+<label for="402:_dateFld">From</label><input id="402:_dateFld" name="VFLD5">
+<label for="403:_dateFld">To</label><input id="403:_dateFld" name="VFLD6">
+
+<div class="hdr">Language Skills</div>
+<label for="501:_selFld">Language</label><input id="501:_selFld" name="VFLD7">
+<label for="502:_selFld">Proficiency</label><input id="502:_selFld" name="VFLD8">
+
+<label for="601:_txtFld">Street</label><input id="601:_txtFld" name="VFLD9">
+
+<script>
+window.chrome={runtime:{onMessage:{addListener:function(fn){window.gfListener=fn}},sendMessage:function(){return Promise.resolve({ok:true})}}};
+</script>
+<script src="rules.js"></script><script src="content.js"></script>
+<script>
+const profile={
+  personal:{firstName:'Test',lastName:'User',email:'t@example.com',country:'Australia',houseNumber:'12',streetName:'Example Street'},
+  eligibility:{},
+  education:[{institution:'UTS',degree:'Bachelor of Cybersecurity',major:'Cybersecurity',levelLabel:'Bachelor Degree',startDate:'2023-02',expectedGraduation:'2026-11',completed:false}],
+  experience:[{employer:'Gridware',title:'Cyber Security Intern',startDate:'2025-02',endDate:'2025-06',current:false,location:'Sydney, NSW',country:'Australia',description:''}],
+  languages:[{language:'Urdu',spoken:'Fluent',written:'Fluent',reading:'Fluent'}],
+  skills:[],preferences:{},
+  tags:{industries:{items:[]},programs:{items:[]},leadership:{items:[]},extracurricular:{items:[]}},
+  custom:[],fieldMemory:[],answerLibrary:[]
+};
+setTimeout(()=>{
+  gfListener({type:'GF_FILL',profile,roleContext:{}},{},function(res){
+    document.body.setAttribute('data-done','yes');
+    document.body.setAttribute('data-report',JSON.stringify(res.report||[]));
+    document.body.setAttribute('data-exp-from', document.getElementById('302:_dateFld').value);
+    document.body.setAttribute('data-exp-to', document.getElementById('303:_dateFld').value);
+    document.body.setAttribute('data-edu-from', document.getElementById('402:_dateFld').value);
+    document.body.setAttribute('data-edu-to', document.getElementById('403:_dateFld').value);
+    document.body.setAttribute('data-lang-proficiency', document.getElementById('502:_selFld').value);
+    document.body.setAttribute('data-street', document.getElementById('601:_txtFld').value);
+  });
+},50);
+</script>
+</body></html>

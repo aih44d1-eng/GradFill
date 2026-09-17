@@ -1,0 +1,42 @@
+/* GradFill — field highlights. Outline only, so nothing on the page moves. */
+
+.gf-ok,
+.gf-check,
+.gf-prompt {
+  outline-style: solid !important;
+  outline-width: 2px !important;
+  outline-offset: 1px !important;
+  border-radius: 3px !important;
+  transition: box-shadow 160ms ease !important;
+}
+
+.gf-ok {
+  outline-color: #1f6f5c !important;
+  box-shadow: 0 0 0 4px rgba(31, 111, 92, 0.12) !important;
+}
+
+.gf-check {
+  outline-color: #b45309 !important;
+  box-shadow: 0 0 0 4px rgba(180, 83, 9, 0.14) !important;
+}
+
+.gf-prompt {
+  outline-color: #b42318 !important;
+  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.14) !important;
+}
+
+.gf-pulse {
+  animation: gf-pulse 1.6s ease-out 1 !important;
+}
+
+@keyframes gf-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(180, 83, 9, 0.14); }
+  30%      { box-shadow: 0 0 0 10px rgba(180, 83, 9, 0.32); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-pulse { animation: none !important; }
+}
+
+.gf-prompt.gf-pulse { box-shadow: 0 0 0 10px rgba(180, 35, 24, 0.28) !important; }
+.gf-ok.gf-pulse { box-shadow: 0 0 0 10px rgba(31, 111, 92, 0.25) !important; }

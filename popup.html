@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><link rel="stylesheet" href="popup.css"></head>
+<body>
+<header class="bar">
+  <div class="mark"><span class="mark-name">GradFill AI</span><span class="mark-sub" id="host">—</span></div>
+  <div class="bar-actions"><span class="plan-mini" id="planMini">Free</span><button class="ghost" id="openSetup" title="Edit your details">Details</button></div>
+</header>
+<section class="pane" id="empty" hidden>
+  <p class="lede">Build your one profile.</p><p class="body">Enter your details once, then GradFill can reuse them across graduate and job applications.</p><button class="primary" id="startSetup">Set up your details</button>
+</section>
+<section class="pane" id="main" hidden>
+  <div class="banner" id="limitBanner" hidden><span id="limitText"></span><button class="ghost" id="upgrade">Upgrade</button></div>
+  <div class="banner" id="relocateBanner" hidden><span>This form asks about relocation, but you haven't set a preference.</span><button class="ghost" id="setRelocatePref">Set it</button></div>
+  <div class="correction-card" id="correctionCard" hidden>
+    <div class="correction-copy"><strong>Remember this answer?</strong><span id="correctionLabel"></span><code id="correctionValue"></code></div>
+    <div class="correction-actions"><button class="ghost" id="dismissCorrection">Not now</button><button class="remember-btn" id="rememberCorrection">Remember</button></div>
+  </div>
+  <div class="fill-stack">
+    <button class="primary" id="fill">Fill this page</button>
+    <button class="review-scan" id="reviewLearn" title="After you fix red fields manually, scan again and teach GradFill those answers">Review scan + learn</button>
+  </div>
+  <p class="usage-line" id="usageLine"></p>
+  <section class="session-card" id="sessionCard" hidden>
+    <div class="section-head"><div><span class="section-kicker">Application session</span><strong id="sessionRole">Current application</strong></div><span class="session-status" id="sessionStatus">Saved</span></div>
+    <p id="sessionMeta">GradFill will keep the job context as you move between application pages.</p>
+  </section>
+  <section class="profile-quick" id="profileQuick">
+    <div class="profile-quick-head">
+      <div><span class="profile-quick-title">Your details</span><span class="profile-quick-sub">Click any value to copy</span></div>
+      <button class="ghost" id="showAllDetails">All details</button>
+    </div>
+    <div class="profile-quick-list" id="profileQuickList"></div>
+  </section>
+  <div class="quick-actions">
+    <button class="ghost" id="openResumeStudio">AI Resume</button>
+    <button class="ghost" id="saveJob">Save job</button>
+    <button class="ghost" id="logApplication">Mark applied</button>
+    <button class="ghost" id="openTracker">Tracker</button>
+  </div>
+  <section class="resume-match-card" id="resumeMatchCard">
+    <div class="section-head"><div><span class="section-kicker">Smart resume</span><strong id="resumeMatchTitle">Checking saved resumes…</strong></div><span class="match-score" id="resumeMatchScore">—</span></div>
+    <p id="resumeMatchMeta">GradFill compares saved resume versions with this role.</p>
+    <div class="section-actions"><button class="ghost" id="useRecommendedResume" hidden>Use this resume</button><button class="ghost" id="tailorNewResume">Tailor new</button></div>
+  </section>
+  <div class="tally" id="tally" hidden>
+    <div class="tally-cell"><span class="tally-num ok" id="nOk">0</span><span class="tally-lab">confident</span></div>
+    <div class="tally-cell"><span class="tally-num check" id="nCheck">0</span><span class="tally-lab">review</span></div>
+    <div class="tally-cell"><span class="tally-num prompt" id="nPrompt">0</span><span class="tally-lab">blank</span></div>
+  </div>
+  <div class="confidence-legend" aria-label="Confidence colours">
+    <span class="legend-dot ok"></span><span>Green: confident</span>
+    <span class="legend-dot check"></span><span>Yellow: review</span>
+    <span class="legend-dot prompt"></span><span>Red: blank / unknown</span>
+  </div>
+  <p class="memory-line" id="memoryLine"></p>
+  <section class="gap-card" id="gapCard">
+    <div class="section-head"><div><span class="section-kicker">Gap dashboard</span><strong id="gapTitle">No recurring gaps</strong></div><span class="gap-count" id="gapCount">0</span></div>
+    <p class="gap-intro">Questions GradFill could not answer confidently. Fix one once and it becomes part of memory.</p>
+    <div class="gap-list" id="gapList"></div>
+  </section>
+  <p class="hint" id="hint">Open an application form and fill the page. Nothing is submitted — that's always you.</p>
+  <ul class="ledger" id="ledger"></ul>
+  <div class="foot"><button class="ghost" id="resume">Saved resume</button><button class="ghost" id="academicRecord">Transcript</button><button class="ghost" id="openProfile" title="Open your saved details beside the application">Quick copy</button><button class="ghost" id="clear">Clear highlights</button><span class="ver" id="ver"></span></div>
+</section>
+<section class="pane quick-copy-pane" id="quickCopyPane" hidden>
+  <div class="quick-copy-head">
+    <div>
+      <p class="eyebrow-mini">GradFill</p>
+      <h2 class="quick-copy-title">Quick Copy</h2>
+      <p class="quick-copy-sub">Keep this panel open beside the application. Click any saved value to copy it, then paste it manually.</p>
+    </div>
+    <button class="ghost" id="backFromQuickCopy">Back</button>
+  </div>
+  <input class="quick-copy-search" id="quickCopySearch" type="search" placeholder="Search your saved details">
+  <div class="quick-copy-list" id="quickCopyList"></div>
+  <p class="quick-copy-foot">Nothing is submitted from Quick Copy. This is only a clipboard helper.</p>
+</section>
+<div class="toast" id="toast" hidden></div>
+<section class="pane" id="promptForm" hidden>
+  <h2 class="pf-title">Written question</h2>
+  <p class="pf-sub" id="questionPreview"></p>
+  <div id="formFields"></div>
+  <div class="pf-actions"><button class="ghost" id="cancelPrompt">Cancel</button><button class="ghost" id="copyPrompt">Copy prompt</button><button class="primary" id="generateAI">Draft with AI</button></div>
+  <div id="draftPanel" hidden>
+    <p class="pf-sub ai-label" id="draftLabel">AI draft — review every line before using it.</p>
+    <textarea id="draftText" rows="10"></textarea>
+    <div class="pf-actions"><button class="ghost" id="copyDraft">Copy draft</button><button class="ghost" id="saveAnswer">Save answer</button><button class="primary" id="insertDraft">Insert into form</button></div>
+  </div>
+</section>
+<script src="cloud.js"></script><script src="popup.js"></script>
+</body></html>

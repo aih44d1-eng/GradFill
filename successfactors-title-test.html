@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{font-family:Arial;margin:20px}.hdr{padding:18px;background:#9aacC5}label{display:inline-block;width:30%;margin:8px}input{width:30%;padding:6px}
+</style></head><body>
+<!--
+  Proves BLOCK_RULES.experience's "title" fix against the EXACT real DOM
+  shape found live on EY's SuccessFactors Candidate Profile "Work
+  experience" section (logged into a real candidate account): the field's
+  label is the bare word "Title" (no "job"/"position"/"role" qualifier),
+  with SF Career Site Builder's usual non-descriptive generated id/name
+  (id="171:_txtFld", name="VFLD3") -- reproduced exactly here, since a
+  bare "^title$" anchor could plausibly be defeated by id/name noise
+  getting appended into the same matching string (own) as the label
+  prose, not just the label text alone.
+-->
+<div class="hdr">Work experience</div>
+<label for="167:_txtFld">* Company name</label><input id="167:_txtFld" name="VFLD1">
+<label for="171:_txtFld">* Title</label><input id="171:_txtFld" name="VFLD3">
+<script>
+window.chrome={runtime:{onMessage:{addListener:function(fn){window.gfListener=fn}},sendMessage:function(){return Promise.resolve({ok:true})}}};
+</script>
+<script src="rules.js"></script><script src="content.js"></script>
+<script>
+const profile={personal:{firstName:'Test',lastName:'User',email:'t@example.com',country:'Australia'},eligibility:{},education:[],experience:[{employer:'Gridware',title:'Cyber Security Intern',startDate:'2025-02',endDate:'2025-06',current:false,location:'Sydney, NSW',country:'Australia',description:''}],languages:[],skills:[],preferences:{},tags:{industries:{items:[]},programs:{items:[]},leadership:{items:[]},extracurricular:{items:[]}},custom:[],fieldMemory:[],answerLibrary:[]};
+setTimeout(()=>{
+  gfListener({type:'GF_FILL',profile,roleContext:{}},{},function(res){
+    document.body.setAttribute('data-done','yes');
+    document.body.setAttribute('data-report',JSON.stringify(res.report||[]));
+    document.body.setAttribute('data-title-value', document.getElementById('171:_txtFld').value);
+    document.body.setAttribute('data-company-value', document.getElementById('167:_txtFld').value);
+  });
+},50);
+</script>
+</body></html>

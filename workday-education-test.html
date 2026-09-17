@@ -1,0 +1,62 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{font-family:Arial;margin:20px}label{display:block;margin:8px 0}input,select{width:30%;padding:6px}
+</style></head><body>
+<!--
+  Proves a real field-matching gap found live this session on Telstra's
+  real Workday "My Experience" step (logged into a real candidate account,
+  reached via Apply Manually -> My Information -> My Experience -> Add
+  under Education):
+
+    <input id="education-15--lastYearAttended-dateSectionYear-input"
+           placeholder="YYYY">
+    labelled "To (Actual or Expected)"
+
+  Two separate misses combined to leave this blank before the fix:
+
+  1. BLOCK_RULES.education's "to" rule required either specific end/
+     graduation-date wording, or the field's own text to be the bare
+     word "to" with nothing else -- but this label is "To (Actual or
+     Expected)", so the trailing "(Actual or Expected)" broke the anchor
+     and none of the other wordings matched either.
+
+  2. Even with the label matched, GF.formatDate()'s bare-YYYY branch
+     checked `^yyyy$` against dateFormatHint()'s full concatenated blob
+     (placeholder + label + surrounding text) -- but that blob always
+     also carries the field's own label/context text appended
+     unconditionally, so an exact whole-string "yyyy" match could never
+     actually fire in practice. Fixed to check the element's own
+     placeholder directly instead.
+
+  This fixture reproduces the exact id/placeholder/label shape to prove
+  both fixes together: the field should end up filled with just "2026"
+  (a bare 4-digit year, not "11/2026" or similar), matched from the
+  profile's expectedGraduation "2026-11".
+-->
+<h2>Education</h2>
+<label>School or University*<input id="education-15--schoolName" name="schoolName"></label>
+<label>Degree*
+  <select id="education-15--degree" name="degree">
+    <option>Select One</option>
+    <option>Bachelor Degree</option>
+    <option>Master Degree</option>
+  </select>
+</label>
+<label>Field of Study<input id="education-15--fieldOfStudy" name="fieldOfStudy"></label>
+<label>To (Actual or Expected)<input id="education-15--lastYearAttended-dateSectionYear-input" placeholder="YYYY"></label>
+<script>
+window.chrome={runtime:{onMessage:{addListener:function(fn){window.gfListener=fn}},sendMessage:function(){return Promise.resolve({ok:true})}}};
+</script>
+<script src="rules.js"></script><script src="content.js"></script>
+<script>
+const profile={personal:{firstName:'Test',lastName:'User',email:'t@example.com',country:'Australia'},eligibility:{},education:[{institution:'UTS',degree:'Bachelor of Cybersecurity',major:'Cybersecurity',levelLabel:'Bachelor Degree',startDate:'2023-02',expectedGraduation:'2026-11',completed:false}],experience:[],languages:[],skills:[],preferences:{},tags:{industries:{items:[]},programs:{items:[]},leadership:{items:[]},extracurricular:{items:[]}},custom:[],fieldMemory:[],answerLibrary:[]};
+setTimeout(()=>{
+  gfListener({type:'GF_FILL',profile,roleContext:{}},{},function(res){
+    document.body.setAttribute('data-done','yes');
+    document.body.setAttribute('data-report',JSON.stringify(res.report||[]));
+    document.body.setAttribute('data-year-value', document.getElementById('education-15--lastYearAttended-dateSectionYear-input').value);
+    document.body.setAttribute('data-school-value', document.getElementById('education-15--schoolName').value);
+    document.body.setAttribute('data-fos-value', document.getElementById('education-15--fieldOfStudy').value);
+  });
+},50);
+</script>
+</body></html>
