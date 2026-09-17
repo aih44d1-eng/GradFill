@@ -55,7 +55,11 @@ Explicitly out of scope (noted for later, not fixed in this pass):
 
 ```sql
 CREATE TABLE IF NOT EXISTS accounts (
-  token               UUID PRIMARY KEY,
+  -- TEXT, not UUID: real tokens are crypto.randomUUID() strings (still
+  -- valid UUIDs), but the existing test suite seeds accounts with
+  -- human-readable fake tokens ("free-token", "pro-token") that a UUID
+  -- column would reject outright. TEXT stores both without change.
+  token               TEXT PRIMARY KEY,
   email               TEXT UNIQUE NOT NULL,
   password_salt       TEXT NOT NULL,
   password_hash       TEXT NOT NULL,
