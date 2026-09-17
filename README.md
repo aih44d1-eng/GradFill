@@ -192,8 +192,8 @@ GradFill keeps a saved resume/transcript one click away and can create reviewed 
 `privacy.html` is an in-extension summary for testing. A public Chrome Web Store release still needs a hosted privacy-policy URL describing the data you actually collect, transmit, store, retain and delete.
 
 Before publishing:
-- deploy the backend on HTTPS and replace/configure `api.gradfill.app`
-- configure secure production database/backups and account recovery
+- ~~deploy the backend on HTTPS and replace/configure `api.gradfill.app`~~ done — see "Backend deployment" below
+- ~~configure secure production database~~ done (Postgres, see "Backend deployment" below) — backups and account recovery still need setting up
 - configure Stripe production checkout/webhooks
 - publish privacy policy and terms
 - complete Chrome Web Store data-use disclosures
@@ -202,6 +202,22 @@ Before publishing:
 - do not add remotely hosted executable JavaScript; API JSON requests are separate from remote code execution
 - add account deletion/data export processes
 - add abuse/rate monitoring and support contact information
+
+## Backend deployment
+
+`server/index.js` is a plain Node app with one dependency (`pg`) and one required environment variable (`DATABASE_URL`, a Postgres connection string — never commit a real one; see `.env.example`).
+
+**Local development:** point `DATABASE_URL` at any reachable empty Postgres 13+ (a local install, Docker, or a free instance from a host like Neon/Supabase), then:
+
+```bash
+npm install
+export DATABASE_URL="postgres://user:password@host:5432/dbname"
+npm start
+```
+
+This is unrelated to and does not affect `demo` mode in the extension's Setup page (`GFCloud`'s `mode` setting) — demo mode never calls this server at all.
+
+**Production (Render):** this repo includes `render.yaml`, a Render Blueprint defining both the web service and a managed Postgres instance together. Deploying it gives a real HTTPS address on Render's own subdomain with no DNS or certificate setup, and Render wires `DATABASE_URL` into the web service automatically since both are defined in the same blueprint.
 
 ## Naming
 
