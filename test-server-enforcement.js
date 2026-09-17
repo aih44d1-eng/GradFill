@@ -7,7 +7,7 @@
    skipping the UI check altogether.
    Run: node test-server-enforcement.js */
 const assert = require("assert");
-const { createServer, createAccountStore, seedAccount } = require("./server/index.js");
+const { createServer, createAccountStore, ensureSchema, seedAccount, closeAccountStore } = require("./server/index.js");
 
 function post(base, path, token, body) {
   return fetch(base + path, {
@@ -29,8 +29,9 @@ async function run() {
   }
 
   const store = createAccountStore();
-  seedAccount(store, "free-token", "free");
-  seedAccount(store, "pro-token", "pro");
+  await ensureSchema(store);
+  await seedAccount(store, "free-token", "free");
+  await seedAccount(store, "pro-token", "pro");
   const server = createServer(store);
   await new Promise(r => server.listen(0, "127.0.0.1", r));
   const port = server.address().port;
@@ -75,7 +76,8 @@ async function run() {
 
     console.log("\n=== Server-side quota still caps a genuinely entitled account (not just a paywall check) ===");
     const capStore = createAccountStore();
-    seedAccount(capStore, "pro-token-2", "pro");
+    await ensureSchema(capStore);
+    await seedAccount(capStore, "pro-token-2", "pro");
     const capServer = createServer(capStore);
     await new Promise(r2 => capServer.listen(0, "127.0.0.1", r2));
     const capPort = capServer.address().port, capBase = "http://127.0.0.1:" + capPort;
@@ -85,6 +87,7 @@ async function run() {
     const over = await post(capBase, "/v1/ai/cover-letter", "pro-token-2", { profile: {}, role: {}, jobDescription: "x" });
     check("call #41 in the same month -> 402 quota (server enforces the cap, not just entitlement)", over.status === 402 && over.body.code === "quota");
     capServer.close();
+    await closeAccountStore(capStore);
 
     console.log("\n=== Invalid/unknown token is rejected, not silently treated as free or trusted ===");
     r = await post(base, "/v1/ai/resume-tailor", "totally-made-up-token", { profile: {}, role: {}, jobDescription: "x" });
@@ -92,6 +95,7 @@ async function run() {
 
   } finally {
     server.close();
+    await closeAccountStore(store);
   }
 
   console.log("\n" + (failures ? failures + " FAILURE(S)" : "All checks passed") + "\n");

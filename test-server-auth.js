@@ -3,7 +3,7 @@
    same way test-server-enforcement.js exercises the AI routes directly.
    Run: node test-server-auth.js */
 const assert = require("assert");
-const { createServer, createAccountStore } = require("./server/index.js");
+const { createServer, createAccountStore, ensureSchema, setAccountFieldsForTest, closeAccountStore } = require("./server/index.js");
 
 function post(base, path, token, body) {
   return fetch(base + path, {
@@ -21,6 +21,7 @@ async function run() {
   }
 
   const store = createAccountStore();
+  await ensureSchema(store);
   const server = createServer(store);
   await new Promise(r => server.listen(0, "127.0.0.1", r));
   const port = server.address().port;
@@ -55,11 +56,12 @@ async function run() {
     check("answer-draft for the freshly-registered account -> 402 paywall", r.status === 402 && r.body.code === "paywall");
 
     console.log("\n=== Manually promote it to Pro in the store (the only legitimate way to change plan) ===");
-    store.accounts.get(token).planId = "pro";
+    await setAccountFieldsForTest(store, token, { planId: "pro" });
     r = await post(base, "/v1/ai/answer-draft", token, { question: "why this role?" });
     check("same token, same call, now succeeds once the store says Pro -> 200 with content", r.status === 200 && !!r.body.draft);
   } finally {
     server.close();
+    await closeAccountStore(store);
   }
 
   console.log("\n" + (failures === 0 ? "All auth checks passed." : failures + " auth check(s) FAILED."));

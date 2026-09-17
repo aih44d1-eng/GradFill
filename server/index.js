@@ -74,8 +74,8 @@ async function seedAccount(store, token, planId, email) {
   await store.pool.query(
     `INSERT INTO accounts (token, email, password_salt, password_hash, plan_id, usage_month, usage_drafts, usage_resumes, usage_cover_letters)
      VALUES ($1, $2, '', '', $3, $4, 0, 0, 0)
-     ON CONFLICT (token) DO UPDATE SET plan_id = EXCLUDED.plan_id`,
-    [token, email || ((planId || "free") + "@test.local"), planId || "free", mk]
+     ON CONFLICT (token) DO UPDATE SET plan_id = EXCLUDED.plan_id, email = EXCLUDED.email`,
+    [token, email || (token + "@test.local"), planId || "free", mk]
   );
 }
 
