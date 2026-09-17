@@ -446,26 +446,34 @@ function createServer(store) {
 
     const path = (req.url || "").split("?")[0];
 
+    // Unauthenticated, no database access — exists purely so a hosting
+    // platform's health check (e.g. Render) has something to poll that
+    // can't itself fail because a bearer token or a DB row is missing.
+    if (req.method === "GET" && path === "/healthz") {
+      send(res, 200, { ok: true });
+      return;
+    }
+
     if (req.method === "POST" && path === "/v1/auth/register") {
       const body = await readBody(req);
       const email = String((body && body.email) || "").trim();
       const password = String((body && body.password) || "");
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { send(res, 400, { error: "A valid email is required." }); return; }
       if (password.length < 8) { send(res, 400, { error: "Password must be at least 8 characters." }); return; }
-      if (accountByEmail(store, email)) { send(res, 409, { error: "An account with that email already exists." }); return; }
+      if (await accountByEmail(store, email)) { send(res, 409, { error: "An account with that email already exists." }); return; }
 
       const token = crypto.randomUUID();
       const { salt, hash } = hashPassword(password);
-      const account = {
-        token, email, passwordSalt: salt, passwordHash: hash,
-        // Every new account starts on Free — nothing in this request body
-        // (there is no `plan` field the client could even send) picks the
-        // plan. Only the Stripe-webhook path (not implemented in this
-        // reference server) is ever meant to move an account off Free.
-        planId: "free",
-        usage: { month: monthKey(), drafts: 0, resumes: 0, coverLetters: 0 }
-      };
-      store.accounts.set(token, account);
+      // Every new account starts on Free — nothing in this request body
+      // (there is no `plan` field the client could even send) picks the
+      // plan. Only the Stripe/Coinbase webhook handlers below are ever
+      // meant to move an account off Free.
+      await store.pool.query(
+        `INSERT INTO accounts (token, email, password_salt, password_hash, plan_id, usage_month, usage_drafts, usage_resumes, usage_cover_letters)
+         VALUES ($1, $2, $3, $4, 'free', $5, 0, 0, 0)`,
+        [token, email, salt, hash, monthKey()]
+      );
+      const account = await getAccount(store, token);
       send(res, 200, { account: toClientAccount(account) });
       return;
     }
@@ -474,7 +482,7 @@ function createServer(store) {
       const body = await readBody(req);
       const email = String((body && body.email) || "").trim();
       const password = String((body && body.password) || "");
-      const account = accountByEmail(store, email);
+      const account = await accountByEmail(store, email);
       if (!account || !account.passwordHash || !verifyPassword(password, account.passwordSalt, account.passwordHash)) {
         send(res, 401, { error: "Invalid email or password." });
         return;
@@ -485,7 +493,7 @@ function createServer(store) {
 
     if (req.method === "POST" && AI_ROUTES[path]) {
       const kind = AI_ROUTES[path];
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
 
       const body = await readBody(req);
@@ -496,6 +504,7 @@ function createServer(store) {
 
       const gate = chargeAI(account, kind);
       if (!gate.ok) { send(res, gate.status, { error: gate.message, code: gate.code }); return; }
+      await persistUsage(store, account);
 
       const result = stubProvider(kind, body);
       send(res, 200, result);
@@ -503,7 +512,7 @@ function createServer(store) {
     }
 
     if (req.method === "GET" && path === "/v1/places/autocomplete") {
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
       const q = new URL(req.url, "http://localhost");
       const input = q.searchParams.get("input") || "";
@@ -527,7 +536,7 @@ function createServer(store) {
     }
 
     if (req.method === "GET" && path === "/v1/places/details") {
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
       const q = new URL(req.url, "http://localhost");
       const placeId = q.searchParams.get("place_id") || "";
@@ -555,7 +564,7 @@ function createServer(store) {
     }
 
     if (req.method === "POST" && path === "/v1/billing/checkout") {
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
       const body = await readBody(req);
       const planId = (body && body.plan) === "season" ? "season" : "pro";
@@ -579,7 +588,7 @@ function createServer(store) {
     }
 
     if (req.method === "POST" && path === "/v1/billing/portal") {
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
 
       if (!STRIPE_SECRET_KEY) {
@@ -610,17 +619,19 @@ function createServer(store) {
         const session = event.data && event.data.object;
         const token = session && session.metadata && session.metadata.gradfill_account_token;
         const planId = session && session.metadata && session.metadata.gradfill_plan;
-        const account = token && store.accounts.get(token);
+        const account = token ? await getAccount(store, token) : null;
         if (account && PLAN_DEFS[planId]) {
-          account.planId = planId;
-          if (session.customer) account.stripeCustomerId = session.customer;
-          account.planExpiresAt = planId === "season" ? Date.now() + PLAN_DEFS.season.seasonDays * 24 * 60 * 60 * 1000 : null;
+          const expiresAt = planId === "season" ? new Date(Date.now() + PLAN_DEFS.season.seasonDays * 24 * 60 * 60 * 1000) : null;
+          await store.pool.query(
+            "UPDATE accounts SET plan_id = $1, plan_expires_at = $2, stripe_customer_id = COALESCE($3, stripe_customer_id) WHERE token = $4",
+            [planId, expiresAt, session.customer || null, token]
+          );
         }
       } else if (event.type === "customer.subscription.deleted") {
         const sub = event.data && event.data.object;
         const customerId = sub && sub.customer;
-        for (const account of store.accounts.values()) {
-          if (account.stripeCustomerId === customerId) { account.planId = "free"; account.planExpiresAt = null; }
+        if (customerId) {
+          await store.pool.query("UPDATE accounts SET plan_id = 'free', plan_expires_at = NULL WHERE stripe_customer_id = $1", [customerId]);
         }
       }
       send(res, 200, { received: true });
@@ -628,7 +639,7 @@ function createServer(store) {
     }
 
     if (req.method === "POST" && path === "/v1/billing/crypto/checkout") {
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
       const body = await readBody(req);
       const planId = (body && body.plan) || "season";
@@ -670,12 +681,14 @@ function createServer(store) {
         const meta = charge && charge.metadata;
         const token = meta && meta.gradfill_account_token;
         const planId = meta && meta.gradfill_plan;
-        const account = token && store.accounts.get(token);
         // Belt-and-braces: only ever grant a plan this route is allowed to
         // grant, even if a stored charge's metadata somehow said otherwise.
-        if (account && CRYPTO_ELIGIBLE_PLANS[planId]) {
-          account.planId = planId;
-          account.planExpiresAt = Date.now() + PLAN_DEFS.season.seasonDays * 24 * 60 * 60 * 1000;
+        if (token && CRYPTO_ELIGIBLE_PLANS[planId]) {
+          const account = await getAccount(store, token);
+          if (account) {
+            const expiresAt = new Date(Date.now() + PLAN_DEFS.season.seasonDays * 24 * 60 * 60 * 1000);
+            await store.pool.query("UPDATE accounts SET plan_id = $1, plan_expires_at = $2 WHERE token = $3", [planId, expiresAt, token]);
+          }
         }
       }
       // Every other event (charge:pending, charge:created, charge:delayed,
@@ -687,7 +700,7 @@ function createServer(store) {
     }
 
     if (req.method === "GET" && path === "/v1/usage") {
-      const account = authenticate(store, req);
+      const account = await authenticate(store, req);
       if (!account) { send(res, 401, { error: "Missing or invalid token" }); return; }
       const plan = planFor(account);
       const mk = monthKey();
@@ -708,20 +721,35 @@ function createServer(store) {
 }
 
 module.exports = {
-  createServer, createAccountStore, seedAccount, PLAN_DEFS, monthKey, chargeAI, planFor,
+  createServer, createAccountStore, ensureSchema, closeAccountStore,
+  seedAccount, getAccount, setAccountFieldsForTest, persistUsage,
+  PLAN_DEFS, monthKey, chargeAI, planFor,
   verifyStripeSignature, verifyCoinbaseSignature, coinbaseEventGrantsPlan
 };
 
 /* Manual local run: node server/index.js — listens on 127.0.0.1:8787,
-   matching cloud.js's DEFAULT_SETTINGS.localApiBase. Seeds two demo
-   accounts so `Local backend` mode in the extension has something to
-   authenticate against without a real signup flow. */
+   matching cloud.js's DEFAULT_SETTINGS.localApiBase (127.0.0.1 for local
+   dev, the real deployed Render URL for productionApiBase). Seeds one
+   demo account so `Local backend` mode in the extension has something to
+   authenticate against without a real signup flow. Requires DATABASE_URL
+   — this reference server does not fall back to an in-memory store if
+   it's unset, since persistence is the whole point of this file now. */
 if (require.main === module) {
-  const store = createAccountStore();
-  seedAccount(store, crypto.randomUUID(), "free", "demo-free@gradfill.local");
-  const server = createServer(store);
-  server.listen(8787, "127.0.0.1", () => {
-    console.log("GradFill reference backend listening on http://127.0.0.1:8787");
-    console.log("(In-memory only — accounts and usage reset on restart. Not for production.)");
+  if (!process.env.DATABASE_URL) {
+    console.error("DATABASE_URL is required — set it to a reachable Postgres connection string.");
+    process.exit(1);
+  }
+  (async () => {
+    const store = createAccountStore();
+    await ensureSchema(store);
+    await seedAccount(store, crypto.randomUUID(), "free", "demo-free@gradfill.local");
+    const server = createServer(store);
+    server.listen(process.env.PORT || 8787, process.env.PORT ? "0.0.0.0" : "127.0.0.1", () => {
+      console.log("GradFill reference backend listening on port " + (process.env.PORT || 8787));
+      console.log("Accounts are now persisted in Postgres — they survive a restart.");
+    });
+  })().catch((e) => {
+    console.error("Failed to start GradFill backend:", e);
+    process.exit(1);
   });
 }
