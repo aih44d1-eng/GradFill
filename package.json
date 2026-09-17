@@ -1,0 +1,14 @@
+{
+  "name": "gradfill-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GradFill AI reference backend",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node test-server-auth.js && node test-server-billing.js && node test-server-enforcement.js && node test-server-restart-survival.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
