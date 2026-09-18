@@ -30,12 +30,17 @@ async function run() {
     else { failures++; console.log("  FAIL - " + name); }
   }
 
-  const token = "restart-survival-token-" + Date.now();
+  // Both token AND email need to be unique per run against a real,
+  // persistent database -- a fixed email collides with the previous
+  // run's leftover row (accounts.email has a UNIQUE constraint) even
+  // though the token itself is already unique per run.
+  const runId = Date.now();
+  const token = "restart-survival-token-" + runId;
 
   console.log("\n=== Server instance #1: create and promote an account ===");
   let store = createAccountStore();
   await ensureSchema(store);
-  await seedAccount(store, token, "free", "restart-survival@test.local");
+  await seedAccount(store, token, "free", "restart-survival-" + runId + "@test.local");
   await setAccountFieldsForTest(store, token, { planId: "pro" });
   let server = createServer(store);
   await new Promise(r => server.listen(0, "127.0.0.1", r));

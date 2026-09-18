@@ -67,14 +67,26 @@ async function closeAccountStore(store) {
 /* TEST-ONLY helper for planting an account (e.g. already on Pro) without
    going through registration -- same purpose as the old in-memory
    version, now backed by a real row. Safe to call twice for the same
-   token (some test files reuse fixture tokens across runs) -- it just
-   re-asserts the given plan on conflict rather than erroring. */
+   token (some test files reuse fixture tokens across runs) -- against a
+   real, PERSISTENT database (unlike the old in-memory Map, which reset
+   itself every process start), "safe to call twice" has to mean a full
+   reset, usage included, or usage from a previous test run silently
+   carries into the next one and quota-cap assertions start failing for
+   reasons that have nothing to do with the code under test. */
 async function seedAccount(store, token, planId, email) {
   const mk = monthKey();
   await store.pool.query(
     `INSERT INTO accounts (token, email, password_salt, password_hash, plan_id, usage_month, usage_drafts, usage_resumes, usage_cover_letters)
      VALUES ($1, $2, '', '', $3, $4, 0, 0, 0)
-     ON CONFLICT (token) DO UPDATE SET plan_id = EXCLUDED.plan_id, email = EXCLUDED.email`,
+     ON CONFLICT (token) DO UPDATE SET
+       plan_id = EXCLUDED.plan_id,
+       email = EXCLUDED.email,
+       usage_month = EXCLUDED.usage_month,
+       usage_drafts = 0,
+       usage_resumes = 0,
+       usage_cover_letters = 0,
+       plan_expires_at = NULL,
+       stripe_customer_id = NULL`,
     [token, email || (token + "@test.local"), planId || "free", mk]
   );
 }
