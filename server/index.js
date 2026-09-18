@@ -917,10 +917,11 @@ module.exports = {
 /* Manual local run: node server/index.js — listens on 127.0.0.1:8787,
    matching cloud.js's DEFAULT_SETTINGS.localApiBase (127.0.0.1 for local
    dev, the real deployed Render URL for productionApiBase). Seeds one
-   demo account so `Local backend` mode in the extension has something to
-   authenticate against without a real signup flow. Requires DATABASE_URL
-   — this reference server does not fall back to an in-memory store if
-   it's unset, since persistence is the whole point of this file now. */
+   demo account (first boot only -- see below) so `Local backend` mode in
+   the extension has something to authenticate against without a real
+   signup flow. Requires DATABASE_URL — this reference server does not
+   fall back to an in-memory store if it's unset, since persistence is
+   the whole point of this file now. */
 if (require.main === module) {
   if (!process.env.DATABASE_URL) {
     console.error("DATABASE_URL is required — set it to a reachable Postgres connection string.");
@@ -929,7 +930,19 @@ if (require.main === module) {
   (async () => {
     const store = createAccountStore();
     await ensureSchema(store);
-    await seedAccount(store, crypto.randomUUID(), "free", "demo-free@gradfill.local");
+    // seedAccount() generates a fresh random token every call, and its
+    // own ON CONFLICT target is `token` -- so calling it unconditionally
+    // on every boot against a database that now actually persists (unlike
+    // the old in-memory Map, which made this a no-op on every restart)
+    // means every restart after the first tries to INSERT a second row
+    // with the same fixed email, and accounts.email is separately UNIQUE.
+    // Postgres correctly rejects that (23505) instead of silently
+    // duplicating an account. Look the demo account up by email first and
+    // only seed it if this is genuinely the first boot ever.
+    const demoEmail = "demo-free@gradfill.local";
+    if (!(await accountByEmail(store, demoEmail))) {
+      await seedAccount(store, crypto.randomUUID(), "free", demoEmail);
+    }
     const server = createServer(store);
     server.listen(process.env.PORT || 8787, process.env.PORT ? "0.0.0.0" : "127.0.0.1", () => {
       console.log("GradFill reference backend listening on port " + (process.env.PORT || 8787));
