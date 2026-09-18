@@ -62,7 +62,6 @@
   $("gfLogout").addEventListener("click", async function(){ await GFCloud.logout(); msg("Signed out."); await render(); });
   $("gfUpgrade").addEventListener("click", async function(){ try { msg("Opening secure checkout…"); var r = await GFCloud.checkout("pro"); if (r && r.demo) msg(r.message || "Stripe is not configured on this server yet."); } catch(e){ msg(e.message,true); } });
   $("gfUpgradeSeason").addEventListener("click", async function(){ try { msg("Opening secure checkout…"); var r = await GFCloud.checkout("season"); if (r && r.demo) msg(r.message || "Stripe is not configured on this server yet."); } catch(e){ msg(e.message,true); } });
-  $("gfUpgradeSeasonCrypto").addEventListener("click", async function(){ try { msg("Opening crypto checkout…"); var r = await GFCloud.cryptoCheckout("season"); if (r && r.demo) msg(r.message || "Crypto checkout is not configured on this server yet."); } catch(e){ msg(e.message,true); } });
   $("gfBilling").addEventListener("click", async function(){ try { var r = await GFCloud.billingPortal(); if (r && r.demo) msg(r.message || "Stripe is not configured on this server yet."); } catch(e){ msg(e.message,true); } });
 
   // Debounced opt-in cloud profile sync. The existing setup controller saves

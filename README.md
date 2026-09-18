@@ -139,14 +139,14 @@ Until this pass, `/v1/billing/checkout` and `/v1/billing/portal` **did not exist
 3. Set `STRIPE_SECRET_KEY` and configure a webhook endpoint at `/v1/billing/webhook` pointed at Stripe's `checkout.session.completed` and `customer.subscription.deleted` events; put its signing secret into `STRIPE_WEBHOOK_SECRET`.
 4. `GFCloud.checkout("pro"|"season")` opens Stripe-hosted checkout; the webhook (signature-verified, `test-server-billing.js` proves this against forged/valid signatures) is what actually grants the plan server-side — never the checkout-creation call itself, since that only proves intent to pay, not payment.
 
-**Crypto, via Coinbase Commerce (additive, Season Pass only — see below for why):**
+**Crypto, via Coinbase Commerce (disabled for launch — Stripe is the only payment path in the product right now; the Setup page has no crypto button and the code below is dormant, kept for a later re-add once Stripe is fully confirmed live):**
 1. Set `COINBASE_COMMERCE_API_KEY` from your Coinbase Commerce account.
 2. Configure a webhook endpoint at `/v1/billing/crypto/webhook`; put its shared secret into `COINBASE_COMMERCE_WEBHOOK_SECRET`.
 3. `GFCloud.cryptoCheckout("season")` opens a Coinbase-hosted charge page. The plan is granted only on the `charge:confirmed` event — never on `charge:pending` (payment seen on-chain but still confirming — can take longer than a card payment) and never on an `UNRESOLVED` charge (Coinbase's own status for underpaid/overpaid/delayed — wrong amount is treated the same as unpaid, not partially honoured).
 
 **Why crypto is Season-Pass-only, not a drop-in replacement for Pro's checkout:** a Coinbase Commerce charge is a one-off blockchain payment; nothing about it can be "charged again" automatically the way a Stripe subscription renews itself. Offering "Pro via crypto" without also building a recurring re-invoice/reminder flow would mean it silently lapses every 30 days — worse than not offering it. Server-side, `/v1/billing/crypto/checkout` refuses `plan: "pro"` with a 400, and the crypto webhook handler refuses to grant any plan outside `{ season }` even if a charge's metadata somehow said otherwise.
 
-**Refunds differ by path, deliberately:** a Stripe refund reverses to the original card automatically. Coinbase Commerce has no automatic refund mechanism — reversing a crypto payment means manually sending crypto back, and only if the customer supplied a refund address at payment time. The Setup page says this explicitly next to the crypto option rather than implying parity with card refunds.
+**Refunds differ by path, deliberately:** a Stripe refund reverses to the original card automatically. Coinbase Commerce has no automatic refund mechanism — reversing a crypto payment means manually sending crypto back, and only if the customer supplied a refund address at payment time. (This distinction will need to be surfaced in the UI again once crypto checkout is re-enabled post-launch.)
 
 Both webhook routes verify a real cryptographic signature (Stripe's `t=...,v1=...` HMAC scheme; Coinbase's plain hex HMAC) before touching any account — an unsigned or forged request is rejected at 400, proven in `test-server-billing.js` with a deliberately-wrong signature.
 

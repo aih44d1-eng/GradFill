@@ -1,8 +1,3 @@
-databases:
-  - name: gradfill-db
-    plan: free
-    postgresMajorVersion: 16
-
 services:
   - type: web
     name: gradfill-backend
@@ -12,9 +7,14 @@ services:
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
+      # Points at the existing Supabase Postgres instance, not a
+      # Render-managed database -- that decision (and the connection
+      # string itself) was made outside this file. sync: false means
+      # Render will prompt for the real value in its dashboard at
+      # deploy time rather than expecting it committed here.
       - key: DATABASE_URL
-        fromDatabase:
-          name: gradfill-db
-          property: connectionString
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: NODE_ENV
         value: production
