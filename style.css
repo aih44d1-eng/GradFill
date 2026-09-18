@@ -445,6 +445,54 @@ section.block:last-of-type { border-bottom: 0; }
 .install-copy h3 { margin: 0 0 6px; font-size: 19px; color: var(--text); }
 .install-copy p { margin: 0; color: var(--text-muted); font-size: 14px; max-width: 46ch; }
 
+/* ---- account / login page ---- */
+.acct-wrap { max-width: 480px; }
+.acct-h1 { font-size: 30px; margin: 6px 0 10px; color: var(--text); letter-spacing: -0.015em; }
+.acct-banner {
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: var(--check-dim);
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.acct-banner strong { display: block; margin-bottom: 4px; color: var(--check); }
+.acct-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 26px 24px;
+}
+.acct-field {
+  display: block;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.acct-field input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.acct-field input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.acct-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.acct-msg { margin: 14px 0 0; font-size: 13px; min-height: 1em; }
+.acct-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+.acct-label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+.acct-row strong { font-size: 16px; color: var(--text); }
+.acct-usage { border-top: 1px solid var(--border); padding-top: 14px; margin-bottom: 18px; }
+.acct-usage-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13.5px; color: var(--text-muted); }
+.acct-usage-row strong { color: var(--text); font-family: var(--mono); font-size: 12.5px; }
+
 /* ---- footer ---- */
 footer {
   padding: 30px 0 50px;

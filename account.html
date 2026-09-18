@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account — GradFill AI</title>
+<meta name="description" content="Sign in to your GradFill AI account to view your plan and manage billing.">
+<link rel="icon" href="assets/icon128.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <img src="assets/icon128.png" alt="">
+      <span class="brand-name">GradFill AI</span>
+    </div>
+    <nav class="topnav">
+      <a href="index.html#what">What it does</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="account.html">Account</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+  </div>
+</header>
+
+<section class="block" id="account-block" style="padding-top:56px">
+  <div class="wrap acct-wrap">
+    <p class="eyebrow">Account</p>
+    <h1 class="acct-h1">Sign in to GradFill</h1>
+    <p class="lede" style="margin-bottom:26px">This talks to the same account system as the extension. Sign in here to check your plan, see usage, or manage billing from a browser instead of the popup.</p>
+
+    <div id="apiWarning" class="acct-banner" hidden>
+      <strong>Can't reach the GradFill server.</strong>
+      <span id="apiWarningDetail">The production backend isn't deployed yet, so requests from this page will fail until it is. Everything below is wired up against the real API and will start working the moment hosting goes live.</span>
+    </div>
+
+    <div id="signedOut" class="acct-card">
+      <label class="acct-field">Email
+        <input type="email" id="email" autocomplete="email" placeholder="you@example.com">
+      </label>
+      <label class="acct-field">Password
+        <input type="password" id="password" autocomplete="current-password" placeholder="At least 8 characters">
+      </label>
+      <div class="acct-actions">
+        <button class="btn btn-primary" id="loginBtn" type="button">Sign in</button>
+        <button class="btn btn-ghost" id="registerBtn" type="button">Create account</button>
+      </div>
+      <p class="acct-msg" id="authMsg"></p>
+    </div>
+
+    <div id="signedIn" class="acct-card" hidden>
+      <div class="acct-row">
+        <div>
+          <span class="acct-label">Signed in as</span>
+          <strong id="acctEmail">—</strong>
+        </div>
+        <span class="price-name" id="acctPlan" style="margin:0">Free</span>
+      </div>
+      <div class="acct-usage" id="acctUsage"></div>
+      <div class="acct-actions">
+        <button class="btn btn-ghost" id="billingBtn" type="button">Manage billing</button>
+        <button class="btn btn-ghost" id="logoutBtn" type="button">Sign out</button>
+      </div>
+      <p class="acct-msg" id="acctMsg"></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 GradFill AI</span>
+    <div class="foot-links">
+      <a href="privacy.html">Privacy policy</a>
+      <a href="index.html">Home</a>
+      <a href="https://github.com/aih44d1-eng/GradFill" target="_blank" rel="noopener">Source on GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* Same backend the extension talks to (server/index.js), not a
+     separate account system. Placeholder until the Postgres/hosting
+     work lands and a real address exists -- swap it here, same as
+     cloud.js's productionApiBase. `?api=` lets you point this page at
+     a local dev server (e.g. http://127.0.0.1:8787) without editing
+     the file, useful for testing this exact page against the real
+     server before the real domain exists. */
+  var API_BASE = new URLSearchParams(location.search).get("api") || "https://gradfill-backend-hajr.onrender.com";
+
+  function $(id) { return document.getElementById(id); }
+  function setMsg(el, text, bad) { el.textContent = text || ""; el.style.color = bad ? "#f87171" : ""; }
+
+  function saveSession(account) { localStorage.setItem("gfSiteAccount", JSON.stringify(account)); }
+  function loadSession() { try { return JSON.parse(localStorage.getItem("gfSiteAccount") || "null"); } catch (e) { return null; } }
+  function clearSession() { localStorage.removeItem("gfSiteAccount"); }
+
+  async function api(path, opts) {
+    var headers = Object.assign({ "Content-Type": "application/json" }, (opts && opts.headers) || {});
+    var session = loadSession();
+    if (session && session.token) headers.Authorization = "Bearer " + session.token;
+    var res;
+    try {
+      res = await fetch(API_BASE + path, Object.assign({}, opts || {}, { headers: headers }));
+    } catch (networkErr) {
+      var e = new Error("network");
+      e.isNetworkError = true;
+      throw e;
+    }
+    var data = null;
+    try { data = await res.json(); } catch (e) { data = {}; }
+    if (!res.ok) {
+      var err = new Error((data && data.error) || ("Request failed (" + res.status + ")"));
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  function showApiWarning(detail) {
+    $("apiWarning").hidden = false;
+    if (detail) $("apiWarningDetail").textContent = detail;
+  }
+
+  async function render() {
+    var session = loadSession();
+    $("signedOut").hidden = !!session;
+    $("signedIn").hidden = !session;
+    if (!session) return;
+
+    $("acctEmail").textContent = session.email || "—";
+    $("acctPlan").textContent = (session.plan && session.plan.id) ? session.plan.id[0].toUpperCase() + session.plan.id.slice(1) : "Free";
+
+    try {
+      var data = await api("/v1/usage", { method: "GET" });
+      var u = data.usage || {};
+      function fmt(x) { return x ? x.used + " / " + (x.limit >= 9999 ? "unlimited" : x.limit) : "—"; }
+      $("acctUsage").innerHTML =
+        "<div class=\"acct-usage-row\"><span>AI drafts this month</span><strong>" + fmt(u.aiDrafts) + "</strong></div>" +
+        "<div class=\"acct-usage-row\"><span>Resume tailors this month</span><strong>" + fmt(u.resumeTailors) + "</strong></div>" +
+        "<div class=\"acct-usage-row\"><span>Cover letters this month</span><strong>" + fmt(u.coverLetters) + "</strong></div>";
+    } catch (e) {
+      if (e.isNetworkError) { showApiWarning(); $("acctUsage").innerHTML = ""; }
+      else if (e.status === 401) { clearSession(); render(); }
+      else { setMsg($("acctMsg"), e.message, true); }
+    }
+  }
+
+  $("loginBtn").addEventListener("click", async function () {
+    var email = $("email").value.trim(), password = $("password").value;
+    if (!email || !password) { setMsg($("authMsg"), "Enter an email and password.", true); return; }
+    setMsg($("authMsg"), "Signing in…");
+    try {
+      var data = await api("/v1/auth/login", { method: "POST", body: JSON.stringify({ email: email, password: password }) });
+      saveSession(data.account);
+      setMsg($("authMsg"), "");
+      render();
+    } catch (e) {
+      if (e.isNetworkError) showApiWarning();
+      else setMsg($("authMsg"), e.message || "Could not sign in.", true);
+    }
+  });
+
+  $("registerBtn").addEventListener("click", async function () {
+    var email = $("email").value.trim(), password = $("password").value;
+    if (!email || password.length < 8) { setMsg($("authMsg"), "Enter an email and a password of at least 8 characters.", true); return; }
+    setMsg($("authMsg"), "Creating account…");
+    try {
+      var data = await api("/v1/auth/register", { method: "POST", body: JSON.stringify({ email: email, password: password }) });
+      saveSession(data.account);
+      setMsg($("authMsg"), "");
+      render();
+    } catch (e) {
+      if (e.isNetworkError) showApiWarning();
+      else setMsg($("authMsg"), e.message || "Could not create an account.", true);
+    }
+  });
+
+  $("logoutBtn").addEventListener("click", function () {
+    clearSession();
+    render();
+  });
+
+  $("billingBtn").addEventListener("click", async function () {
+    setMsg($("acctMsg"), "Opening billing portal…");
+    try {
+      var data = await api("/v1/billing/portal", { method: "POST", body: "{}" });
+      if (data.url) { window.open(data.url, "_blank"); setMsg($("acctMsg"), ""); }
+      else setMsg($("acctMsg"), data.message || "Billing isn't configured on this server yet.", true);
+    } catch (e) {
+      if (e.isNetworkError) showApiWarning();
+      else setMsg($("acctMsg"), e.message || "Could not open billing.", true);
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
