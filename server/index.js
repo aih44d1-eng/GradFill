@@ -19,6 +19,23 @@
 const http = require("http");
 const https = require("https");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+
+/* Tiny built-in .env loader — deliberately not the `dotenv` package, to
+   keep this file's "Node built-ins only" promise intact for local dev
+   convenience. Only fills vars not already set in the real environment,
+   so a real deployment's actual env always wins over a stray .env file. */
+(function loadDotEnv() {
+  try {
+    const envPath = path.join(__dirname, "..", ".env");
+    if (!fs.existsSync(envPath)) return;
+    fs.readFileSync(envPath, "utf8").split("\n").forEach(line => {
+      const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+      if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    });
+  } catch (e) { /* best-effort only */ }
+})();
 
 /* Mirrors cloud.js's PLAN_DEFS (the extension's copy is UI-only — this
    copy is what actually protects API spend). In a real deployment these
@@ -115,14 +132,163 @@ function chargeAI(account, kind) {
   return { ok: true };
 }
 
-/* Stub AI provider — no real key is configured in this reference server.
-   A real deployment swaps this for the actual OpenAI/Anthropic call,
-   AFTER chargeAI() has already succeeded, never before. */
+/* Stub AI provider — used only when ANTHROPIC_API_KEY is unset (e.g. this
+   file's own automated tests, which must never make a real network call
+   or spend real money). A real deployment reaches callAIProvider() below
+   instead, AFTER chargeAI() has already succeeded, never before. */
 function stubProvider(kind, payload) {
   const role = (payload && payload.role) || {};
   if (kind === "resume") return { content: "[server] tailored resume for " + (role.title || "the role"), demo: false };
   if (kind === "coverletter") return { content: "[server] cover letter for " + (role.title || "the role") + (role.company ? " at " + role.company : ""), demo: false };
   return { draft: "[server] drafted answer for: " + (payload && payload.question || "the question"), demo: false };
+}
+
+/* ---------- Anthropic AI provider (real) ----------
+   Haiku 4.5, not a bigger model: every call here is one generation gated
+   behind a paid action a human already chose to take (Tailor with AI /
+   Generate with AI / Draft with AI), never a high-volume background
+   classification step — so raw cost isn't the binding constraint and the
+   cheapest current model is the right fit. What IS binding is fabrication
+   safety (see FABRICATION_SAFETY_RULES below): that's a prompting/review
+   discipline, not something a bigger model buys you more of on its own. */
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
+
+function anthropicMessages(system, userContent, maxTokens) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: maxTokens || 1024,
+      system,
+      messages: [{ role: "user", content: userContent }]
+    });
+    const req = https.request({
+      hostname: "api.anthropic.com",
+      path: "/v1/messages",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body),
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+      }
+    }, (res) => {
+      let data = "";
+      res.on("data", c => { data += c; });
+      res.on("end", () => {
+        let parsed;
+        try { parsed = JSON.parse(data); } catch (e) { reject(new Error("Non-JSON response from Anthropic (HTTP " + res.statusCode + "): " + data.slice(0, 300))); return; }
+        if (res.statusCode >= 400) { reject(new Error((parsed.error && parsed.error.message) || ("Anthropic API error (HTTP " + res.statusCode + ")"))); return; }
+        const text = (parsed.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+        resolve(text);
+      });
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+/* Shared across all three routes below. The README already states this
+   product rule (never invent achievements, metrics, employers, dates,
+   qualifications or skills) — this is that same rule enforced in the
+   actual system prompt, not just documented intent. */
+const FABRICATION_SAFETY_RULES =
+  "You are GradFill's writing assistant for graduate job applications. " +
+  "You are given a JSON \"profile\" object containing the ONLY facts you may use " +
+  "about the candidate: their education, work experience, skills, languages, and " +
+  "STAR examples. Treat this profile as a closed world.\n\n" +
+  "Hard rules, no exceptions:\n" +
+  "1. Never invent or embellish achievements, metrics, numbers, employers, job titles, " +
+  "dates, qualifications, certifications, tools, or skills that are not explicitly present " +
+  "in the supplied profile JSON.\n" +
+  "2. If the job description asks for something the profile does not contain (a specific " +
+  "certification, years of experience, a tool, a metric), do NOT fabricate it and do NOT " +
+  "imply the candidate has it. Either omit that requirement entirely or, if directly relevant, " +
+  "note honestly that it is not part of the candidate's saved background — never invent a bridge.\n" +
+  "3. You may reorder, rephrase, emphasise, and select among the TRUE facts already in the " +
+  "profile to better match the target role. That is the entire job: truthful repackaging, not " +
+  "invention.\n" +
+  "4. If the profile is too thin to write a strong response, write an honest, appropriately " +
+  "modest response using only what is there, rather than padding it with plausible-sounding " +
+  "invented content. A short truthful draft is correct behaviour, not a failure.\n" +
+  "5. Output the requested document/text only — no meta-commentary about these rules, no " +
+  "markdown code fences, no preamble like \"Here is your resume\".";
+
+function jsonBlock(label, value) {
+  return label + ":\n" + JSON.stringify(value === undefined ? null : value, null, 2);
+}
+
+async function realResumeTailor(payload) {
+  const profile = (payload && payload.profile) || {};
+  const role = (payload && payload.role) || {};
+  const jobDescription = (payload && payload.jobDescription) || role.description || "";
+  const user =
+    "Write a tailored, ATS-friendly plain-text resume for this candidate for the target role below.\n\n" +
+    jsonBlock("profile (the only facts you may use)", profile) + "\n\n" +
+    jsonBlock("target role", role) + "\n\n" +
+    jsonBlock("job description", jobDescription) + "\n\n" +
+    "Structure: a short profile/summary line, CORE SKILLS, EXPERIENCE, EDUCATION — using only " +
+    "sections the profile actually has content for. Do not add a section with no true content behind it.";
+  const content = await anthropicMessages(FABRICATION_SAFETY_RULES, user, 1200);
+
+  const jd = String(jobDescription || "").toLowerCase();
+  const skills = Array.isArray(profile.skills) ? profile.skills
+    : String(profile.skills || "").split(",").map(s => s.trim()).filter(Boolean);
+  const matchedSkills = skills.filter(s => jd.indexOf(String(s).toLowerCase()) > -1);
+  const stop = new Set("the and for with that this from your you are our will have has role job into their they about skills skill experience work working team graduate program candidate required preferred ability strong good excellent using use within across through who what when where how not but all any can".split(" "));
+  const counts = {};
+  (jd.match(/[a-z][a-z0-9+.#-]{2,}/g) || []).forEach(w => { if (!stop.has(w)) counts[w] = (counts[w] || 0) + 1; });
+  const keywords = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 18);
+
+  return { content, matchedSkills, keywords, demo: false };
+}
+
+async function realCoverLetter(payload) {
+  const profile = (payload && payload.profile) || {};
+  const role = (payload && payload.role) || {};
+  const jobDescription = (payload && payload.jobDescription) || role.description || "";
+  const user =
+    "Write a complete, ready-to-edit cover letter for this candidate applying to the target role below.\n\n" +
+    jsonBlock("profile (the only facts you may use)", profile) + "\n\n" +
+    jsonBlock("target role", role) + "\n\n" +
+    jsonBlock("job description", jobDescription) + "\n\n" +
+    "Standard business letter shape (greeting, 2-4 short paragraphs, sign-off). Use the " +
+    "candidate's first name from profile.personal.firstName if present, otherwise sign off as " +
+    "\"Candidate\". Reference the target role and company by name where given.";
+  const content = await anthropicMessages(FABRICATION_SAFETY_RULES, user, 900);
+  return { content, demo: false };
+}
+
+async function realAnswerDraft(payload) {
+  const profile = (payload && payload.profile) || {};
+  const role = (payload && payload.role) || {};
+  const question = (payload && payload.question) || "";
+  const userContext = (payload && payload.userContext) || {};
+  const user =
+    "Draft an answer to the following application question, for this candidate applying to the " +
+    "target role below.\n\n" +
+    jsonBlock("question", question) + "\n\n" +
+    jsonBlock("profile (the only facts you may use)", profile) + "\n\n" +
+    jsonBlock("target role", role) + "\n\n" +
+    jsonBlock("extra context supplied by the candidate (still must be truthful, not new facts to invent beyond)", userContext) + "\n\n" +
+    "Write 3-6 sentences of natural, first-person prose answering the question directly, grounded " +
+    "only in the supplied profile and context.";
+  const draft = await anthropicMessages(FABRICATION_SAFETY_RULES, user, 500);
+  return { draft, demo: false };
+}
+
+/* The single seam every AI route below calls through. Falls back to the
+   stub only when no key is configured at all (keeps this file runnable
+   and its existing test suite network-free without ANTHROPIC_API_KEY set);
+   once a key IS configured, a real provider failure surfaces as a real
+   502 to the caller rather than silently degrading to stub text, since
+   that would look like a genuine AI draft when it wasn't. */
+async function callAIProvider(kind, payload) {
+  if (!ANTHROPIC_API_KEY) return stubProvider(kind, payload);
+  if (kind === "resume") return realResumeTailor(payload);
+  if (kind === "coverletter") return realCoverLetter(payload);
+  return realAnswerDraft(payload);
 }
 
 function readRawBody(req) {
@@ -448,8 +614,16 @@ function createServer(store) {
       const gate = chargeAI(account, kind);
       if (!gate.ok) { send(res, gate.status, { error: gate.message, code: gate.code }); return; }
 
-      const result = stubProvider(kind, body);
-      send(res, 200, result);
+      try {
+        const result = await callAIProvider(kind, body);
+        send(res, 200, result);
+      } catch (e) {
+        // The charge above already happened. A real deployment should
+        // consider refunding the metered use on provider failure; this
+        // reference server surfaces the failure honestly instead of
+        // pretending success or silently falling back to stub content.
+        send(res, 502, { error: e.message || "AI provider request failed." });
+      }
       return;
     }
 
@@ -660,7 +834,8 @@ function createServer(store) {
 
 module.exports = {
   createServer, createAccountStore, seedAccount, PLAN_DEFS, monthKey, chargeAI, planFor,
-  verifyStripeSignature, verifyCoinbaseSignature, coinbaseEventGrantsPlan
+  verifyStripeSignature, verifyCoinbaseSignature, coinbaseEventGrantsPlan,
+  callAIProvider, stubProvider, FABRICATION_SAFETY_RULES
 };
 
 /* Manual local run: node server/index.js — listens on 127.0.0.1:8787,
