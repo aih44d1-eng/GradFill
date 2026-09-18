@@ -256,6 +256,62 @@ section.block:last-of-type { border-bottom: 0; }
 .mp-resume-box b { display: block; font-size: 11px; margin-bottom: 2px; }
 .mp-badge { display: inline-block; margin-top: 8px; border: 1px solid var(--focus); color: var(--focus); border-radius: 999px; padding: 3px 8px; font-family: var(--mono); font-size: 9px; font-weight: 700; text-transform: uppercase; }
 
+/* ---- generic vs AI-tailored resume example ---- */
+.jd-box {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px 18px;
+  margin: 0 0 26px;
+  font-size: 13.5px;
+  color: #24333f;
+}
+.jd-box p { margin: 0; }
+.jd-label {
+  display: block;
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.compare-col {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.compare-col.tailored { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
+.compare-head {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.compare-col.tailored .compare-head { color: var(--focus); background: rgba(76,79,155,0.06); }
+.compare-pre {
+  margin: 0;
+  padding: 16px 18px;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--ink);
+  max-height: 460px;
+  overflow-y: auto;
+}
+
 /* ---- pricing ---- */
 .pricing-grid {
   display: grid;
@@ -279,6 +335,29 @@ section.block:last-of-type { border-bottom: 0; }
 .price-list li { padding: 7px 0; border-top: 1px solid var(--rule); font-size: 13.5px; display: flex; gap: 8px; }
 .price-list li:first-child { border-top: 0; }
 .price-list li::before { content: "✓"; color: var(--ok); font-weight: 700; flex: 0 0 auto; }
+.tier-example {
+  margin-top: auto;
+  padding: 12px 13px;
+  border-radius: 8px;
+  background: #f6f8f6;
+  border: 1px solid var(--rule);
+  font-size: 12.5px;
+  color: #3a453f;
+  line-height: 1.5;
+}
+.tier-example b { color: var(--ink); }
+
+/* ---- early access note ---- */
+.note-box {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: #fff;
+  padding: 28px 26px;
+  max-width: 68ch;
+}
+.note-box p { margin: 0 0 14px; font-size: 14.5px; color: #24333f; }
+.note-box p:last-child { margin-bottom: 0; }
+.note-sign { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
 /* ---- install ---- */
 .install-box {
