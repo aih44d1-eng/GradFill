@@ -606,18 +606,37 @@ const AI_ROUTES = {
   "/v1/ai/cover-letter": "coverletter"
 };
 
+// The real extension never hits CORS at all: MV3's host_permissions
+// (already declared for these exact origins in manifest.json) grants
+// fetch() from an extension page/service worker past the same-origin
+// restriction entirely. CORS only matters for the public marketing
+// site's account.html, which runs in a plain browser tab and gets no
+// such exemption. Scoped to that site's real origin(s) specifically —
+// not a wildcard — because a wildcard would let any other website's
+// script make authenticated requests here using a token it phished or
+// guessed, same-origin-policy being the only thing normally stopping
+// that. Add a custom domain here if/when GradFill AI gets one.
+const ALLOWED_ORIGINS = ["https://aih44d1-eng.github.io"];
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.indexOf(origin) > -1) return true;
+  // Local dev/testing convenience only -- never true in the actual
+  // deployed environment, where render.yaml sets NODE_ENV=production.
+  if (process.env.NODE_ENV !== "production" && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  return false;
+}
+
 function createServer(store) {
   store = store || createAccountStore();
   return http.createServer(async (req, res) => {
-    // Local reference server only (see the file header — not for
-    // production). The real extension never hits CORS here at all: MV3's
-    // host_permissions (already declared for these exact origins in
-    // manifest.json) grants fetch() from an extension page/service worker
-    // past the same-origin restriction entirely, the same way the
-    // pre-existing AI routes above already rely on. This exists so the
-    // same requests are also testable from a plain browser tab/local dev
-    // tool, which gets no such exemption and needs a real CORS response.
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    const origin = req.headers.origin;
+    if (isAllowedOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      // Response varies by request Origin now, not a fixed wildcard --
+      // tell any cache (browser, CDN, proxy) not to reuse one origin's
+      // CORS response for a different origin's request.
+      res.setHeader("Vary", "Origin");
+    }
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
