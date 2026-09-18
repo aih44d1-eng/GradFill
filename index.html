@@ -9,6 +9,19 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<script>
+  /* Runs before the sections below paint. Only opts into the animated
+     scroll-reveal system when the user has NOT asked for reduced motion
+     — if this never runs (JS off) or reduced motion is on, every
+     .reveal/.reveal-heading/.reveal-pop element's CSS default (fully
+     visible, no transform) simply applies and nothing here matters. */
+  (function () {
+    try {
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce) document.documentElement.classList.add('motion-ready');
+    } catch (e) {}
+  })();
+</script>
 
 <header class="topbar">
   <div class="wrap">
@@ -28,81 +41,81 @@
 
 <section class="hero">
   <div class="wrap">
-    <p class="eyebrow">Graduate &amp; job application autofill</p>
-    <h1>Stop retyping your resume into every application.</h1>
-    <p class="lede">Job hunting already asks a lot of you. GradFill AI is a browser extension that remembers your details so you don't have to keep typing them — it fills in the repetitive fields from one saved profile, helps you draft written answers and tailored resumes (which you always look over first), and keeps every application organised in one tracker. You're still the one who reviews and hits Submit — always.</p>
-    <div class="hero-ctas">
+    <p class="eyebrow reveal">Graduate &amp; job application autofill</p>
+    <h1 class="reveal-heading">Stop retyping your resume into every application.</h1>
+    <p class="lede reveal">Job hunting already asks a lot of you. GradFill AI is a browser extension that remembers your details so you don't have to keep typing them — it fills in the repetitive fields from one saved profile, helps you draft written answers and tailored resumes (which you always look over first), and keeps every application organised in one tracker. You're still the one who reviews and hits Submit — always.</p>
+    <div class="hero-ctas reveal">
       <a href="#install" class="btn btn-primary">Install GradFill AI</a>
       <a href="#what" class="btn btn-ghost">See what it does</a>
     </div>
-    <p class="hero-note">Not yet on the Chrome Web Store — see the Install section below.</p>
+    <p class="hero-note reveal">Not yet on the Chrome Web Store — see the Install section below.</p>
 
     <div class="stat-row">
-      <div class="stat-cell"><span class="stat-num">One profile</span><span class="stat-lab">Enter your details once, reuse them everywhere</span></div>
-      <div class="stat-cell"><span class="stat-num">Free autofill</span><span class="stat-lab">The core filling engine has no plan limit, ever</span></div>
-      <div class="stat-cell"><span class="stat-num">Human-reviewed AI</span><span class="stat-lab">Every AI draft is shown to you first, never auto-inserted</span></div>
+      <div class="stat-cell reveal-pop"><span class="stat-num">One profile</span><span class="stat-lab">Enter your details once, reuse them everywhere</span></div>
+      <div class="stat-cell reveal-pop"><span class="stat-num">Free autofill</span><span class="stat-lab">The core filling engine has no plan limit, ever</span></div>
+      <div class="stat-cell reveal-pop"><span class="stat-num">Human-reviewed AI</span><span class="stat-lab">Every AI draft is shown to you first, never auto-inserted</span></div>
     </div>
   </div>
 </section>
 
 <section class="block" id="what">
   <div class="wrap">
-    <p class="eyebrow">What it does</p>
-    <h2>One profile. Everything else gets easier from there.</h2>
-    <p class="lede">We built GradFill because filling in the tenth near-identical application of the week isn't how anyone wants to spend an evening. Save your details once — GradFill handles the repetition, and you stay in charge of everything that actually goes out the door.</p>
+    <p class="eyebrow reveal">What it does</p>
+    <h2 class="reveal-heading">One profile. Everything else gets easier from there.</h2>
+    <p class="lede reveal">We built GradFill because filling in the tenth near-identical application of the week isn't how anyone wants to spend an evening. Save your details once — GradFill handles the repetition, and you stay in charge of everything that actually goes out the door.</p>
 
     <div class="feature-grid">
-      <div class="feature-card">
+      <div class="feature-card reveal">
         <span class="glyph ok">✓</span>
         <h3>Autofill from one profile</h3>
         <p>Save your education, experience, skills, contact details and preferences once. From then on, GradFill fills them in for you across application pages — no more hunting down the same answer for the fifth time this week.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card reveal">
         <span class="glyph check">?</span>
         <h3>Honest about what it isn't sure of</h3>
         <p>If GradFill can't confidently fill a field, it says so rather than guessing or leaving it silently blank — flagged clearly, so you always know what's worth a second look before you submit.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card reveal">
         <span class="glyph focus">AI</span>
         <h3>AI-drafted written answers</h3>
         <p>Stuck on how to answer "why this role?" again? Ask for a draft, read it over inside GradFill, and edit it until it sounds like you. Nothing is written or submitted without you choosing to.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card reveal">
         <span class="glyph focus">AI</span>
         <h3>Resume Studio</h3>
         <p>Ask for a resume tailored to a specific role, built only from facts already in your saved profile — reordered and emphasised for the job, never invented. Keep as many versions as you like.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card reveal">
         <span class="glyph ok">✓</span>
         <h3>Job Tracker</h3>
         <p>Every application in one place: Saved → Applying → Applied → Assessment → Interview → Offer, with notes, links, the job description you saved, and which resume version you used.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card reveal">
         <span class="glyph ok">✓</span>
         <h3>You press Submit — not GradFill</h3>
         <p>GradFill fills things in and helps you draft. It will never click Submit on your behalf. You always get the final look before anything goes anywhere.</p>
       </div>
     </div>
 
-    <p class="eyebrow" style="margin-top:40px">Platform coverage</p>
+    <p class="eyebrow reveal" style="margin-top:40px">Platform coverage</p>
     <div class="platform-strip">
-      <span class="platform-pill"><span class="dot ok"></span>Workday</span>
-      <span class="platform-pill"><span class="dot ok"></span>SAP SuccessFactors</span>
-      <span class="platform-pill"><span class="dot ok"></span>Oracle Fusion Cloud Recruiting</span>
-      <span class="platform-pill"><span class="dot check"></span>Avature (we can detect it — full autofill isn't built yet)</span>
-      <span class="platform-pill"><span class="dot check"></span>Other ATS &amp; generic forms (basic filling)</span>
+      <span class="platform-pill reveal-pop"><span class="dot ok"></span>Workday</span>
+      <span class="platform-pill reveal-pop"><span class="dot ok"></span>SAP SuccessFactors</span>
+      <span class="platform-pill reveal-pop"><span class="dot ok"></span>Oracle Fusion Cloud Recruiting</span>
+      <span class="platform-pill reveal-pop"><span class="dot check"></span>Avature (we can detect it — full autofill isn't built yet)</span>
+      <span class="platform-pill reveal-pop"><span class="dot check"></span>Other ATS &amp; generic forms (basic filling)</span>
     </div>
   </div>
 </section>
 
 <section class="block" id="screens">
   <div class="wrap">
-    <p class="eyebrow">See it</p>
-    <h2>Take a look inside</h2>
-    <span class="mock-note">These panels are recreated directly from GradFill's real interface code and colours — not live browser screenshots. We'll swap in real captures here once the Chrome Web Store listing is live.</span>
+    <p class="eyebrow reveal">See it</p>
+    <h2 class="reveal-heading">Take a look inside</h2>
+    <span class="mock-note reveal">These panels are recreated directly from GradFill's real interface code and colours — not live browser screenshots. We'll swap in real captures here once the Chrome Web Store listing is live.</span>
 
     <div class="mock-grid">
-      <figure class="mock-frame">
+      <figure class="mock-frame reveal">
         <div class="mock-chrome"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span></div>
         <div class="mock-body">
           <div class="mp-bar"><span class="mp-mark-name">GradFill AI</span><span class="mp-plan">Pro</span></div>
@@ -121,7 +134,7 @@
         <figcaption class="mock-caption">The main popup — fill status at a glance, uncertain fields flagged, referees always left for you.</figcaption>
       </figure>
 
-      <figure class="mock-frame">
+      <figure class="mock-frame reveal">
         <div class="mock-chrome"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span></div>
         <div class="mock-body mp-resume">
           <div class="mp-resume-box">
@@ -134,7 +147,7 @@
         <figcaption class="mock-caption">Resume Studio — a role-specific draft built only from facts already in your saved profile.</figcaption>
       </figure>
 
-      <figure class="mock-frame">
+      <figure class="mock-frame reveal">
         <div class="mock-chrome"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span></div>
         <div class="mock-body mp-tracker">
           <div class="mp-tracker-col">
@@ -159,18 +172,18 @@
 
 <section class="block" id="example">
   <div class="wrap">
-    <p class="eyebrow">A real example</p>
-    <h2>Generic resume vs. AI-tailored — the actual output</h2>
-    <span class="mock-note">This isn't marketing copy. We built a fictional example profile ("Priya", a placeholder — not a real person) and ran it through GradFill's real, live Resume Studio AI against the representative job posting below. What you see on the right is the genuine, unedited model output from that run.</span>
+    <p class="eyebrow reveal">A real example</p>
+    <h2 class="reveal-heading">Generic resume vs. AI-tailored — the actual output</h2>
+    <span class="mock-note reveal">This isn't marketing copy. We built a fictional example profile ("Priya", a placeholder — not a real person) and ran it through GradFill's real, live Resume Studio AI against the representative job posting below. What you see on the right is the genuine, unedited model output from that run.</span>
 
-    <div class="jd-box">
+    <div class="jd-box reveal">
       <span class="jd-label">Job posting used (representative example, fictional employer)</span>
       <p><strong>Graduate Software Engineer — Contoso Digital (fictional company)</strong><br>
       Looking for early-career engineers to join product teams building customer-facing web applications (JavaScript/TypeScript, React, Node.js, some Python). Write and maintain automated tests, collaborate closely with designers and PMs in an agile team. No specific years of experience required — but internship, work-integrated-learning, or team project experience is a strong plus, as is any experience improving the performance or reliability of an existing system.</p>
     </div>
 
     <div class="compare-grid">
-      <div class="compare-col">
+      <div class="compare-col reveal">
         <div class="compare-head">Generic — no tailoring</div>
         <pre class="compare-pre">PRIYA
 
@@ -186,7 +199,7 @@ Ran weekly lab sessions for a first-year programming course, helping around 30 s
 SKILLS
 JavaScript, Python, React, Node.js, SQL, Git</pre>
       </div>
-      <div class="compare-col tailored">
+      <div class="compare-col tailored reveal">
         <div class="compare-head">AI-tailored — real Resume Studio output</div>
         <pre class="compare-pre">PRIYA
 
@@ -221,12 +234,12 @@ Fictional State University</pre>
 
 <section class="block" id="pricing">
   <div class="wrap">
-    <p class="eyebrow">Pricing</p>
-    <h2>The free part isn't a trial — it's the whole autofill engine.</h2>
-    <p class="lede">Autofill, the Job Tracker, and your saved profile cost nothing to run and are never gated, so they're free with no limit, no trial period, no catch. Only the generative AI features — written-answer drafts, resume tailoring, cover letters — are metered and need Pro or a Season Pass, because those are the parts that cost us real money to run.</p>
+    <p class="eyebrow reveal">Pricing</p>
+    <h2 class="reveal-heading">The free part isn't a trial — it's the whole autofill engine.</h2>
+    <p class="lede reveal">Autofill, the Job Tracker, and your saved profile cost nothing to run and are never gated, so they're free with no limit, no trial period, no catch. Only the generative AI features — written-answer drafts, resume tailoring, cover letters — are metered and need Pro or a Season Pass, because those are the parts that cost us real money to run.</p>
 
     <div class="pricing-grid">
-      <div class="price-card">
+      <div class="price-card reveal">
         <p class="price-name">Free</p>
         <p class="price-amount">A$0</p>
         <p class="price-sub">Forever — no trial, no card required</p>
@@ -238,7 +251,7 @@ Fictional State University</pre>
         </ul>
         <div class="tier-example"><b>In practice:</b> you fill out 15 applications this month on Workday and SuccessFactors, keep them all organised in your tracker, and it costs you nothing — none of that touches AI.</div>
       </div>
-      <div class="price-card featured">
+      <div class="price-card featured reveal">
         <p class="price-name">Pro</p>
         <p class="price-amount">A$20<span> / month</span></p>
         <p class="price-sub">Everything in Free, plus AI drafting</p>
@@ -250,7 +263,7 @@ Fictional State University</pre>
         </ul>
         <div class="tier-example"><b>In practice:</b> you're applying to 10 roles this month. GradFill drafts a tailored resume and cover letter for each and a handful of written answers along the way — comfortably inside the monthly caps, for A$20.</div>
       </div>
-      <div class="price-card">
+      <div class="price-card reveal">
         <p class="price-name">Grad Season Pass</p>
         <p class="price-amount">A$45<span> / 90 days</span></p>
         <p class="price-sub">Same AI entitlement as Pro, as a one-off pass</p>
@@ -267,9 +280,9 @@ Fictional State University</pre>
 
 <section class="block" id="early-access">
   <div class="wrap">
-    <p class="eyebrow">Where this stands today</p>
-    <h2>This is early, on purpose</h2>
-    <div class="note-box">
+    <p class="eyebrow reveal">Where this stands today</p>
+    <h2 class="reveal-heading">This is early, on purpose</h2>
+    <div class="note-box reveal">
       <p>GradFill AI is genuinely early. The autofill engine and Job Tracker are solid and free forever — that part isn't going anywhere. The AI drafting is real too: it's live, it's careful about only using facts you've actually given it, and you can see exactly what's built by looking at the code itself, which is public.</p>
       <p>Some things aren't finished. Avature autofill is detection-only right now. There's no Chrome Web Store listing yet. We'd rather tell you that plainly than dress it up — and we'd rather earn your trust with real reviews once there are real users, instead of putting invented quotes on this page today.</p>
       <p class="note-sign">— The GradFill AI team</p>
@@ -279,9 +292,9 @@ Fictional State University</pre>
 
 <section class="block" id="install">
   <div class="wrap">
-    <p class="eyebrow">Install</p>
-    <h2>Get GradFill AI</h2>
-    <div class="install-box">
+    <p class="eyebrow reveal">Install</p>
+    <h2 class="reveal-heading">Get GradFill AI</h2>
+    <div class="install-box reveal">
       <div class="install-copy">
         <h3>Not yet on the Chrome Web Store</h3>
         <p>GradFill AI's store listing hasn't been published yet. This button will link straight to it the moment it's live — check back soon, or watch this page.</p>
@@ -303,5 +316,39 @@ Fictional State University</pre>
   </div>
 </footer>
 
+<script>
+  /* Scroll-reveal: only does anything when <html> has .motion-ready
+     (added by the inline script at the top of body, itself gated on
+     prefers-reduced-motion). No library — a static site this size
+     doesn't need one. */
+  (function () {
+    if (!document.documentElement.classList.contains('motion-ready')) return;
+    if (!('IntersectionObserver' in window)) return;
+
+    var targets = document.querySelectorAll('.reveal, .reveal-heading, .reveal-pop');
+
+    // Stagger siblings that reveal together (e.g. the six feature cards,
+    // the five platform pills) so they settle in one after another
+    // instead of all at once.
+    targets.forEach(function (el) {
+      var siblings = Array.prototype.filter.call(el.parentElement.children, function (c) {
+        return c.classList && (c.classList.contains('reveal') || c.classList.contains('reveal-heading') || c.classList.contains('reveal-pop'));
+      });
+      var idx = siblings.indexOf(el);
+      el.style.transitionDelay = (Math.min(idx, 6) * 70) + 'ms';
+    });
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    targets.forEach(function (el) { io.observe(el); });
+  })();
+</script>
 </body>
 </html>
