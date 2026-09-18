@@ -53,7 +53,10 @@
     demoPlan: "free",
     cloudSync: false,
     localApiBase: "http://127.0.0.1:8787",
-    productionApiBase: "https://api.gradfill.app"
+    // Real, deployed backend (Render, backed by the real Supabase
+    // Postgres instance) -- see docs/superpowers/plans for how it got
+    // there. Live and reachable, not a placeholder.
+    productionApiBase: "https://gradfill-backend-hajr.onrender.com"
   };
 
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
