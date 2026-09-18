@@ -1,8 +1,52 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GradFill AI — Privacy summary</title><link rel="stylesheet" href="setup.css"></head><body><main style="max-width:760px;margin:40px auto;padding:0 24px 80px"><p class="eyebrow">GradFill AI</p><h1>Privacy summary</h1><p class="sub">This page describes the behaviour of the extension package. A public privacy-policy URL is still required before Chrome Web Store publication.</p>
-<section><h2>Local mode</h2><p>Your profile, documents, tracker, and usage counters are stored in <code>chrome.storage.local</code>. No account or AI data is transmitted in Offline demo mode.</p></section>
-<section><h2>Cloud mode</h2><p>Cloud sync is opt-in. When enabled, profile and tracker data are sent over HTTPS to the configured GradFill backend. The built-in sync intentionally strips the base64 contents of saved resume and transcript files; only their filename/type metadata is included in profile sync.</p></section>
-<section><h2>AI assistance</h2><p>When you explicitly request an AI draft or tailored resume, GradFill sends the application question or job description together with relevant education, work experience, skills, languages, preferences and STAR examples. Demographic and accessibility fields are excluded from the default AI payload. AI output is a draft only and must be reviewed by the user.</p></section>
-<section><h2>Billing</h2><p>The extension does not collect card details. Upgrade and billing buttons open a hosted payment page supplied by the GradFill backend/payment processor.</p></section>
-<section><h2>Submission</h2><p>GradFill does not press a job application's final Submit button. The user reviews and submits the application.</p></section>
-<section><h2>Production checklist</h2><p>Before public release, replace the placeholder API domain with your deployed backend, publish a full privacy policy and terms, configure your Chrome Web Store data disclosures, and make the disclosures consistent with the actual server/database retention practices.</p></section>
-</main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy — GradFill AI</title>
+<link rel="icon" href="assets/icon128.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="doc">
+  <a class="back" href="index.html">← Back to GradFill AI</a>
+  <h1>Privacy policy</h1>
+  <p class="sub">Last updated 2026-09-18. This page describes exactly how the GradFill AI browser extension and its backend handle your data.</p>
+
+  <section>
+    <h2>Local mode (default)</h2>
+    <p>Your profile, saved documents, job tracker, and usage counters are stored in your browser's local extension storage (<code>chrome.storage.local</code>) on your own device. In Offline demo mode, no account or AI data is transmitted anywhere.</p>
+  </section>
+
+  <section>
+    <h2>Cloud sync (opt-in)</h2>
+    <p>Cloud sync is off by default. If you turn it on, your profile and job tracker are sent over HTTPS to the GradFill backend so they can follow you across devices. Sync deliberately strips the actual file contents of a saved resume or transcript before sending — only the filename and file type are included, never the document itself.</p>
+  </section>
+
+  <section>
+    <h2>AI-assisted drafting</h2>
+    <p>AI features (drafted written answers, resume tailoring, cover letters) only run when you explicitly ask for them. When you do, GradFill sends the relevant application question or job description together with the career-relevant parts of your profile — education, work experience, skills, languages, preferences, and any STAR examples you've saved — to the GradFill backend, which forwards it to the configured AI provider. Demographic and accessibility fields are excluded from this payload by default. Every AI draft is shown to you inside GradFill for review before you can edit, save, or insert it — it is never generated or submitted silently.</p>
+  </section>
+
+  <section>
+    <h2>Billing</h2>
+    <p>GradFill does not collect or store your card details. Upgrade and billing actions open a hosted checkout/billing page run by our payment processor; GradFill's own backend never sees your payment card number.</p>
+  </section>
+
+  <section>
+    <h2>What GradFill never does</h2>
+    <p>GradFill does not press an application's final Submit button on your behalf — you always review and submit the application yourself. Referee/reference contact details are never auto-filled; GradFill flags those fields for you to complete manually. GradFill does not sell your data to third parties.</p>
+  </section>
+
+  <section>
+    <h2>Your choices</h2>
+    <p>You can use GradFill entirely offline in Offline demo mode, turn cloud sync on or off at any time from Setup, and delete your saved profile, documents, and tracker data from the extension at any time. Deleting your account (if you've created one) removes the corresponding data from the GradFill backend.</p>
+  </section>
+
+  <section>
+    <h2>Contact</h2>
+    <p>Questions about this policy or your data can be sent to the support contact listed on GradFill AI's Chrome Web Store listing once it is published.</p>
+  </section>
+</main>
+</body>
+</html>
